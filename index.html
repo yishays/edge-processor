@@ -1115,6 +1115,75 @@
       .fs-pkt.is-drop { width: 40px; }
       .fs-pkt.is-arc { width: 20px; height: 8px; padding: 0; }
     }
+    /* Mobile UX pass: phones are the main audience */
+    .mobile-only { display: none; }
+    .stage-tabs { display: none; }
+    @media (max-width: 900px) {
+      .stage-tabs {
+        display: flex; gap: var(--space-xs); padding: var(--space-xs);
+        background: var(--surface-container); border-radius: var(--rounded);
+      }
+      .stage-tab {
+        flex: 1; border: 0; background: transparent; color: var(--on-surface-variant);
+        font-weight: 700; font-size: 0.95rem; min-height: 44px; border-radius: var(--rounded); cursor: pointer;
+      }
+      .stage-tab.is-active { background: var(--surface-card); color: var(--primary); box-shadow: var(--tile-shadow-soft); }
+      .sim-stage:not(.show-in) .stream-card.is-in { display: none; }
+      .sim-stage.show-in .stream-card.is-out { display: none; }
+    }
+    @media (max-width: 720px) {
+      /* data-flow animation runs top to bottom on a phone */
+      .fs-stage { grid-template-columns: 1fr; gap: 2.75rem; padding: var(--space-lg) var(--space-md); min-height: 0; }
+      .fs-dests { flex-direction: row; gap: var(--space-md); }
+      .fs-dests .fs-zone { flex: 1; }
+      .fs-zone { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 8px; padding: var(--space-md); }
+      .fs-ep { flex-direction: column; }
+      .fs-zone strong { font-size: 0.95rem; }
+      .fs-steps { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+      .fs-steps li { font-size: 0.75rem; }
+      .fs-dests .fs-zone { flex-direction: column; }
+      .fs-pkt { height: 14px; border-radius: 7px; }
+      .fs-pkt.is-raw { width: 92px; }
+      .fs-pkt.is-out { width: 34px; }
+      .fs-pkt.is-drop { width: 50px; }
+      .fs-pkt.is-arc { width: 22px; height: 10px; }
+    }
+    @media (max-width: 640px) {
+      .mobile-only { display: block; }
+      .top-bar { justify-content: center; text-align: center; }
+      .site-logo { height: 40px; }
+      .headline-stack { padding-block: var(--space-md) var(--space-sm); }
+      .band { padding-block: var(--space-xl); }
+      .kpi-grid { gap: var(--space-sm); }
+      .kpi-tile { padding: var(--space-md); display: grid; grid-template-columns: auto 1fr; column-gap: var(--space-md); align-items: center; text-align: right; }
+      .kpi-tile .kpi-value { grid-row: span 2; margin: 0; min-width: 4.2rem; text-align: center; }
+      .kpi-label { margin: 0; }
+      .arch-wrapper { padding: var(--space-md); }
+      /* the diagram keeps a readable size and scrolls sideways inside its card */
+      .arch-svg-card { overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; }
+      .arch-svg { min-width: 620px; }
+      .swipe-hint { font-size: var(--label-size); color: var(--on-surface-variant); text-align: center; margin: 0 0 var(--space-sm); }
+      .impact-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: var(--space-md); gap: var(--space-md) var(--space-sm); }
+      .impact-num { font-size: 1.45rem; }
+      .sim-controls-bar, .stream-card, .spl2-card, .wal-sim-card, .compare-card { padding: var(--space-md); }
+      .preset-pills { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+      .preset-pills .btn-secondary { padding-inline: 0.6rem; font-size: 0.82rem; }
+      .sim-top-row > .btn-secondary { width: 100%; }
+      .wal-meta-row { flex-direction: column; gap: 2px; }
+      .wal-actions .btn-warning { flex: 1; }
+      /* comparison table becomes one card per row */
+      .compare-card { background: transparent; padding: 0; }
+      .compare-table thead { display: none; }
+      .compare-table, .compare-table tbody, .compare-table tr, .compare-table td { display: block; width: 100%; }
+      .compare-table tr { background: var(--surface-card); border-radius: var(--rounded-lg); padding: var(--space-md); margin-bottom: var(--space-sm); }
+      .compare-table td { border: 0; padding: 4px 0; }
+      .compare-table td:first-child { font-family: var(--font-headline); font-size: 1.05rem; padding-bottom: var(--space-xs); }
+      .compare-table td[data-label]::before { content: attr(data-label); display: block; font-size: var(--label-size); font-weight: 700; color: var(--on-surface-variant); }
+      .compare-table td.compare-ep-cell { padding: var(--space-sm) var(--space-md); margin-top: var(--space-xs); }
+      .compare-table td.compare-ep-cell::before { color: var(--on-primary-container); }
+      .page-footer { flex-direction: column; align-items: center; text-align: center; }
+    }
+
     /* PEAX branding */
     .site-logo { height: 46px; width: auto; display: block; }
     .footer-brand { display: inline-flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
@@ -1192,6 +1261,7 @@
         </div>
 
         <div class="arch-layout">
+          <p class="swipe-hint mobile-only">החליקו הצידה כדי לראות את כל התרשים, ולחצו על רכיב</p>
           <div class="arch-svg-card">
             <svg class="arch-svg" viewBox="0 0 640 370" role="img" aria-label="תרשים ארכיטקטורה של Splunk Edge Processor">
               <!-- On-prem network boundary -->
@@ -1455,8 +1525,12 @@
         </div>
 
         <!-- Before / After Visual Comparison -->
-        <div class="sim-stage">
-          <div class="stream-card">
+        <div class="sim-stage" id="sim-stage">
+          <div class="stage-tabs" role="group" aria-label="בחירת תצוגה">
+            <button type="button" class="stage-tab is-active" id="tab-out" onclick="showStage('out')">אחרי עיבוד</button>
+            <button type="button" class="stage-tab" id="tab-in" onclick="showStage('in')">קלט גולמי</button>
+          </div>
+          <div class="stream-card is-in">
             <div class="stream-header">
               <h3 class="stream-title">קלט גולמי (<bdi dir="ltr">$source</bdi>)</h3>
               <span class="stream-badge" id="badge-input">6 אירועים גולמיים</span>
@@ -1464,7 +1538,7 @@
             <div class="log-list" id="raw-log-list"></div>
           </div>
 
-          <div class="stream-card">
+          <div class="stream-card is-out">
             <div class="stream-header">
               <h3 class="stream-title">פלט אחרי עיבוד (<bdi dir="ltr">$destination</bdi>)</h3>
               <span class="stream-badge is-saved" id="badge-output">מסונן ומוכן לאינדוקס</span>
@@ -2151,6 +2225,16 @@
       codeEl.innerHTML = lines.join('\n');
     }
 
+    // Phone view: one log list at a time
+    function showStage(which) {
+      const stage = document.getElementById('sim-stage');
+      if (stage) stage.classList.toggle('show-in', which === 'in');
+      const tIn = document.getElementById('tab-in');
+      const tOut = document.getElementById('tab-out');
+      if (tIn) tIn.classList.toggle('is-active', which === 'in');
+      if (tOut) tOut.classList.toggle('is-active', which === 'out');
+    }
+
     function escapeHtml(str) {
       return String(str)
         .replace(/&/g, '&amp;')
@@ -2230,8 +2314,8 @@
       tbody.innerHTML = compareRows.map((row) => `
         <tr>
           <td><strong>${row.dim}</strong></td>
-          <td>${row.hf[audienceMode]}</td>
-          <td class="compare-ep-cell">${row.ep[audienceMode]}</td>
+          <td data-label="Heavy Forwarder">${row.hf[audienceMode]}</td>
+          <td class="compare-ep-cell" data-label="Edge Processor">${row.ep[audienceMode]}</td>
         </tr>
       `).join('');
     }
@@ -2242,6 +2326,12 @@
       setAudienceMode('basic');
       selectArchNode('ep');
       walTimer = setInterval(stepWalSimulation, 750);
+      // on a phone, open the architecture diagram centred on the Edge Processor node
+      const archCard = document.querySelector('.arch-svg-card');
+      if (archCard && archCard.scrollWidth > archCard.clientWidth) {
+        const mid = (archCard.scrollWidth - archCard.clientWidth) / 2;
+        archCard.scrollLeft = getComputedStyle(archCard).direction === 'rtl' ? -mid : mid;
+      }
     });
   </script>
 
