@@ -1,0 +1,2402 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="artifact-type" content="narrative">
+  <meta name="design-style" content="showroom">
+  <title>Splunk Edge Processor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Rubik:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+
+      /* Page and surfaces (Clean airy PEAX light tones) */
+      --background: #fafcfb;
+      --surface-card: #ffffff;
+      --surface-container-low: #f1f7f3;
+      --surface-container: #e3ede6;
+      --surface-container-high: #d3e2d8;
+
+      /* Ink */
+      --on-surface: #132219;
+      --on-surface-variant: #465a4e;
+
+      /* Rules */
+      --outline: #bdd0c4;
+      --outline-variant: #dbe7df;
+
+      /* Accents: PEAX Greens + Splunk Coral-Orange touches */
+      --primary: #157a47;
+      --primary-hover: #106339;
+      --on-primary: #ffffff;
+      --primary-container: #dcf3e5;
+      --on-primary-container: #0d4d2c;
+
+      --secondary: #c93b1a;
+      --secondary-container: #fdebe6;
+      --on-secondary-container: #8c240c;
+      --tertiary: #132219;
+
+      /* Semantic */
+      --positive: #157a47;
+      --warning: #a15c07;
+      --warning-container: #fef3dc;
+      --error: #c42b1c;
+      --error-container: #fde8e6;
+      --on-error: #ffffff;
+
+      /* Data series */
+      --data-1: #157a47;
+      --data-2: #c93b1a;
+      --data-3: #1b6b84;
+      --data-4: #6b5299;
+      --data-context: #9fb2a6;
+
+      /* Focus */
+      --focus: #157a47;
+
+      /* Fonts */
+      --font-headline: 'Rubik', 'Heebo', sans-serif;
+      --font-body: 'Heebo', sans-serif;
+      --font-label: 'Heebo', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+
+      /* Type scale (Narrative) */
+      --display-size: clamp(2.25rem, 1.5rem + 3vw, 3.65rem);
+      --headline-size: clamp(1.65rem, 1.25rem + 1.6vw, 2.35rem);
+      --subhead-size: clamp(1.15rem, 1.05rem + 0.45vw, 1.4rem);
+      --body-size: clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+      --label-size: clamp(0.78rem, 0.75rem + 0.12vw, 0.85rem);
+
+      /* Shape */
+      --rounded: 9999px;
+      --rounded-md: 0.875rem;
+      --rounded-lg: 1.25rem;
+      --rounded-full: 9999px;
+
+      /* Spacing scale */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 1.5rem;
+      --space-xl: 2.5rem;
+      --space-2xl: 4rem;
+      --space-3xl: 5.5rem;
+
+      /* Effects */
+      --tile-shadow-hover: 0 8px 28px rgb(19 34 25 / 0.08);
+      --tile-shadow-soft: 0 4px 16px rgb(19 34 25 / 0.04);
+      --focus-ring: 0 0 0 3px rgb(21 122 71 / 0.25);
+
+      /* Motion */
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+      --dur-micro: 140ms;
+      --dur-short: 240ms;
+      --dur-long: 440ms;
+    }
+
+    /* Base reset */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      overflow-x: clip;
+      margin: 0;
+      padding: 0;
+      background-color: var(--background);
+      color: var(--on-surface);
+      font-family: var(--font-body);
+      font-size: var(--body-size);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    header { position: static !important; }
+    button, input, select, textarea { font-family: inherit; }
+
+    :focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding-inline: var(--space-lg);
+    }
+
+    .container * { min-width: 0; }
+
+    /* Top utility strip (lightweight, non-sticky) */
+    .top-bar {
+      padding-block: var(--space-lg) var(--space-sm);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+    }
+
+    .brand-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-weight: 600;
+      font-size: var(--label-size);
+      color: var(--on-primary-container);
+      background: var(--primary-container);
+      padding: 0.38rem 0.9rem;
+      border-radius: var(--rounded);
+    }
+
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--rounded-full);
+      background: var(--secondary);
+      display: inline-block;
+    }
+
+    /* Audience Toggle (Segmented Control) */
+    .audience-control {
+      display: inline-flex;
+      align-items: center;
+      background: var(--surface-container);
+      padding: var(--space-xs);
+      border-radius: var(--rounded);
+      gap: var(--space-xs);
+    }
+
+    .audience-btn {
+      border: 0;
+      background: transparent;
+      color: var(--on-surface-variant);
+      font-size: var(--label-size);
+      font-weight: 600;
+      padding: 0.55rem 1.05rem;
+      min-height: 44px;
+      border-radius: var(--rounded);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: background-color var(--dur-short) var(--ease-in-out), color var(--dur-short) var(--ease-in-out);
+    }
+
+    .audience-btn:hover {
+      color: var(--on-surface);
+    }
+
+    .audience-btn.is-active {
+      background: var(--surface-card);
+      color: var(--primary);
+      box-shadow: var(--tile-shadow-soft);
+    }
+
+    /* Showroom Centered Headline Stack */
+    .headline-stack {
+      text-align: center;
+      padding-block: var(--space-xl) var(--space-lg);
+      max-width: 780px;
+      margin-inline: auto;
+    }
+
+    .section-eyebrow {
+      display: inline-block;
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--secondary);
+      margin-bottom: var(--space-sm);
+    }
+
+    .headline-stack h1 {
+      font-family: var(--font-headline);
+      font-size: var(--display-size);
+      font-weight: 800;
+      line-height: 1.12;
+      margin: 0;
+      color: var(--on-surface);
+    }
+
+    .headline-stack h2 {
+      font-family: var(--font-headline);
+      font-size: var(--headline-size);
+      font-weight: 700;
+      line-height: 1.18;
+      margin: 0;
+      color: var(--on-surface);
+    }
+
+    .headline-stack .lede {
+      color: var(--on-surface-variant);
+      font-size: var(--subhead-size);
+      line-height: 1.55;
+      max-width: 58ch;
+      margin: var(--space-md) auto 0;
+    }
+
+    .accent-word {
+      color: var(--primary);
+    }
+
+    /* Tonal Section Bands */
+    .band {
+      padding-block: var(--space-2xl);
+    }
+
+    .band.alt {
+      background: var(--surface-container-low);
+    }
+
+    .band.alt .tile {
+      background: var(--surface-card);
+    }
+
+    /* Borderless 20px Rounded Tiles */
+    .tile {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-xl) var(--space-lg);
+      border: 0;
+    }
+
+    .tile-soft {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--tile-shadow-soft);
+    }
+
+    /* Hero KPI Strip (3 crisp key takeaways) */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-md);
+      margin-top: var(--space-lg);
+    }
+
+    .kpi-tile {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      text-align: center;
+    }
+
+    .kpi-value {
+      font-family: var(--font-headline);
+      font-size: clamp(1.5rem, 1.2rem + 1vw, 2.05rem);
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1.2;
+      margin-bottom: var(--space-xs);
+    }
+
+    .kpi-value.splunk-tone {
+      color: var(--secondary);
+    }
+
+    .kpi-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--on-surface);
+      margin-bottom: var(--space-xs);
+    }
+
+    .kpi-caption {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      line-height: 1.45;
+    }
+
+    /* Pill Buttons */
+    .btn-primary {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-radius: var(--rounded);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.65rem 1.35rem;
+      min-height: 44px;
+      border: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-micro) var(--ease-out);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-secondary {
+      background: var(--surface-container);
+      color: var(--on-surface);
+      border-radius: var(--rounded);
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 0.65rem 1.25rem;
+      min-height: 44px;
+      border: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      transition: background-color var(--dur-micro) var(--ease-out);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-container-high);
+    }
+
+    .btn-secondary.is-active {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+
+    .btn-warning {
+      background: var(--secondary-container);
+      color: var(--on-secondary-container);
+      border-radius: var(--rounded);
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 0.65rem 1.25rem;
+      min-height: 44px;
+      border: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      transition: background-color var(--dur-micro) var(--ease-out);
+    }
+
+    .btn-warning:hover {
+      background: var(--outline-variant);
+    }
+
+    .btn-warning.is-tripped {
+      background: var(--secondary);
+      color: var(--on-primary);
+    }
+
+    /* Section 1: Interactive Architecture Map */
+    .arch-wrapper {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      margin-top: var(--space-lg);
+    }
+
+    .arch-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+    }
+
+    .arch-hint {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      font-weight: 500;
+    }
+
+    .arch-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+      gap: var(--space-lg);
+      align-items: stretch;
+    }
+
+    .arch-svg-card {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .arch-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .arch-node {
+      cursor: pointer;
+      transition: opacity var(--dur-short) var(--ease-out);
+    }
+
+    .arch-node:hover .node-box {
+      stroke: var(--primary);
+      stroke-width: 2.5;
+    }
+
+    .arch-node.is-selected .node-box {
+      stroke: var(--primary);
+      stroke-width: 3;
+      fill: var(--primary-container);
+    }
+
+    .arch-node.is-selected.is-cloud .node-box {
+      stroke: var(--secondary);
+      fill: var(--secondary-container);
+    }
+
+    .arch-detail-card {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: var(--space-md);
+    }
+
+    .detail-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      align-self: flex-start;
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--rounded);
+      font-size: var(--label-size);
+      font-weight: 600;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+
+    .detail-tag.is-cloud {
+      background: var(--secondary-container);
+      color: var(--on-secondary-container);
+    }
+
+    .detail-title {
+      font-family: var(--font-headline);
+      font-size: var(--subhead-size);
+      font-weight: 700;
+      margin: 0;
+      color: var(--on-surface);
+    }
+
+    .detail-body {
+      margin: 0;
+      color: var(--on-surface-variant);
+      line-height: 1.65;
+    }
+
+    .detail-bullets {
+      margin: 0;
+      padding-inline-start: 1.2rem;
+      color: var(--on-surface);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      font-size: 0.95rem;
+    }
+
+    .detail-meta {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-md);
+      padding: var(--space-md);
+      font-size: 0.9rem;
+      color: var(--on-surface);
+    }
+
+    .detail-meta-label {
+      font-weight: 700;
+      color: var(--primary);
+      display: block;
+      margin-bottom: 2px;
+      font-size: var(--label-size);
+    }
+
+    /* Animated SVG flow packet */
+    @keyframes flowDash {
+      to { stroke-dashoffset: -24; }
+    }
+
+    .flow-line-active {
+      stroke-dasharray: 6 6;
+      animation: flowDash 0.9s linear infinite;
+    }
+
+    /* Section 2: Interactive Pipeline Playground */
+    .sim-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-lg);
+      margin-top: var(--space-lg);
+    }
+
+    .sim-controls-bar {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .sim-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+    }
+
+    .preset-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+    }
+
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-md);
+    }
+
+    .pipeline-switch {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-md);
+      padding: var(--space-md);
+      cursor: pointer;
+      border: 2px solid transparent;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      min-height: 44px;
+      transition: background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
+    }
+
+    .pipeline-switch:hover {
+      background: var(--surface-container);
+    }
+
+    .pipeline-switch.is-on {
+      background: var(--primary-container);
+      border-color: var(--primary);
+    }
+
+    .switch-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      width: 100%;
+    }
+
+    .switch-title {
+      font-weight: 700;
+      font-size: 0.98rem;
+      color: var(--on-surface);
+    }
+
+    .switch-pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: var(--rounded);
+      background: var(--surface-container-high);
+      color: var(--on-surface-variant);
+    }
+
+    .pipeline-switch.is-on .switch-pill {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+
+    .switch-desc {
+      font-size: 0.88rem;
+      color: var(--on-surface-variant);
+      line-height: 1.45;
+    }
+
+    /* Visual Before / After + Savings Metrics */
+    .sim-stage {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.15fr);
+      gap: var(--space-lg);
+    }
+
+    .stream-card {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .stream-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+    }
+
+    .stream-title {
+      font-family: var(--font-headline);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--on-surface);
+      margin: 0;
+    }
+
+    .stream-badge {
+      font-size: var(--label-size);
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: var(--rounded);
+      background: var(--surface-container-low);
+      color: var(--on-surface-variant);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stream-badge.is-saved {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .log-row {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-md);
+      padding: 0.75rem 0.9rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--on-surface);
+      direction: ltr;
+      text-align: left;
+      overflow-wrap: anywhere;
+      transition: opacity var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+    }
+
+    .log-row.is-dropped {
+      background: var(--error-container);
+      color: var(--error);
+      text-decoration: line-through;
+      opacity: 0.75;
+    }
+
+    .log-row.is-kept {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+
+    .log-row.is-s3 {
+      background: var(--warning-container);
+      color: var(--warning);
+    }
+
+    .mask-highlight {
+      background: var(--secondary);
+      color: var(--on-primary);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* Live Impact Metrics Bar */
+    .impact-strip {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-md);
+      align-items: center;
+    }
+
+    .impact-stat {
+      text-align: center;
+    }
+
+    .impact-num {
+      font-family: var(--font-headline);
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--primary);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+    }
+
+    .impact-num.is-coral {
+      color: var(--secondary);
+    }
+
+    .impact-lbl {
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    /* Light-mode SPL2 Code Panel */
+    .spl2-card {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+    }
+
+    .spl2-code {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-md);
+      padding: var(--space-md) var(--space-lg);
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      line-height: 1.65;
+      color: var(--on-surface);
+      direction: ltr;
+      text-align: left;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      margin: var(--space-sm) 0 0;
+    }
+
+    .tok-cmd { color: var(--primary); font-weight: 600; }
+    .tok-var { color: var(--secondary); font-weight: 600; }
+    .tok-cmt { color: var(--on-surface-variant); font-style: italic; }
+
+    /* Section 3: Durable Queue (WAL) Interactive Demo */
+    .wal-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
+      gap: var(--space-lg);
+      margin-top: var(--space-lg);
+      align-items: stretch;
+    }
+
+    .wal-sim-card {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    .wal-lanes {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .wal-lane {
+      background: var(--surface-card);
+      border-radius: var(--rounded-md);
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .wal-lane-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+    }
+
+    .lane-name {
+      font-weight: 700;
+      font-size: 0.98rem;
+      color: var(--on-surface);
+    }
+
+    .status-chip {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.2rem 0.75rem;
+      border-radius: var(--rounded);
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+
+    .status-chip.is-down {
+      background: var(--error-container);
+      color: var(--error);
+    }
+
+    .wal-bar-track {
+      height: 16px;
+      background: var(--surface-container);
+      border-radius: var(--rounded);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .wal-bar-fill {
+      height: 100%;
+      width: 6%;
+      background: var(--primary);
+      border-radius: var(--rounded);
+      transition: width var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+    }
+
+    .wal-bar-fill.is-filling {
+      background: var(--secondary);
+    }
+
+    .wal-meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--label-size);
+      color: var(--on-surface-variant);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .wal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+    }
+
+    .wal-pillars {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .pillar-card {
+      background: var(--surface-container-low);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      flex: 1;
+    }
+
+    .pillar-kicker {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--secondary);
+      margin-bottom: var(--space-xs);
+    }
+
+    .pillar-title {
+      font-family: var(--font-headline);
+      font-weight: 700;
+      font-size: 1.08rem;
+      margin: 0 0 var(--space-xs);
+      color: var(--on-surface);
+    }
+
+    .pillar-text {
+      margin: 0;
+      font-size: 0.94rem;
+      color: var(--on-surface-variant);
+      line-height: 1.55;
+    }
+
+    /* Section 4: Comparison Table (HF vs EP) */
+    .compare-card {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+      margin-top: var(--space-lg);
+      overflow-x: auto;
+    }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: right;
+    }
+
+    .compare-table th {
+      font-size: var(--label-size);
+      font-weight: 700;
+      color: var(--on-surface-variant);
+      padding: var(--space-md);
+      border-bottom: 2px solid var(--outline-variant);
+    }
+
+    .compare-table td {
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--outline-variant);
+      vertical-align: top;
+      font-size: 0.95rem;
+      color: var(--on-surface);
+    }
+
+    .compare-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .compare-ep-cell {
+      font-weight: 600;
+      color: var(--on-primary-container);
+      background: var(--primary-container);
+      border-radius: 8px;
+    }
+
+    .takeaway-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-md);
+      margin-top: var(--space-lg);
+    }
+
+    .takeaway-tile {
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-lg);
+    }
+
+    .takeaway-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--rounded-full);
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      font-family: var(--font-headline);
+      font-weight: 700;
+      margin-bottom: var(--space-sm);
+    }
+
+    /* Footer */
+    .page-footer {
+      padding-block: var(--space-xl);
+      border-top: 1px solid var(--outline-variant);
+      color: var(--on-surface-variant);
+      font-size: var(--label-size);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: var(--space-md);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 900px) {
+      .arch-layout,
+      .wal-grid,
+      .sim-stage {
+        grid-template-columns: 1fr;
+      }
+      .toggle-grid,
+      .kpi-grid,
+      .takeaway-grid {
+        grid-template-columns: 1fr;
+      }
+      .impact-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding-inline: var(--space-md);
+      }
+      .band {
+        padding-block: var(--space-xl);
+      }
+      .headline-stack {
+        padding-block: var(--space-lg) var(--space-md);
+      }
+      .impact-strip {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+    /* Live data-flow animation */
+    .fs-shell { display: flex; flex-direction: column; gap: var(--space-lg); margin-top: var(--space-lg); }
+    .fs-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-md); }
+    .fs-stage {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: clamp(2.5rem, 8vw, 7rem);
+      align-items: center;
+      background: var(--surface-card);
+      border-radius: var(--rounded-lg);
+      padding: var(--space-xl) var(--space-lg);
+      min-height: 340px;
+      overflow: hidden;
+    }
+    .fs-zone {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+      padding: var(--space-md);
+      border-radius: var(--rounded-md);
+      background: var(--surface-container-low);
+      color: var(--on-surface);
+      transition: box-shadow var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+    }
+    .fs-zone strong { font-family: var(--font-headline); font-size: 1rem; }
+    .fs-zone svg { color: var(--primary); }
+    .fs-sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--on-surface-variant); }
+    .fs-count { font-size: var(--label-size); font-weight: 600; color: var(--on-surface-variant); font-variant-numeric: tabular-nums; }
+    .fs-ep { background: var(--primary-container); padding-block: var(--space-lg); }
+    .fs-ep strong { color: var(--on-primary-container); font-size: 1.1rem; }
+    .fs-ep.is-busy { box-shadow: 0 0 0 4px rgb(21 122 71 / 0.25); }
+    .fs-steps { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; width: 100%; }
+    .fs-steps li {
+      font-size: 0.8rem; font-weight: 600; color: var(--on-primary-container);
+      background: var(--surface-card); border-radius: 6px; padding: 3px 8px;
+      transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+    }
+    .fs-steps li.is-hit { background: var(--primary); color: var(--on-primary); }
+    .fs-dests { display: flex; flex-direction: column; gap: var(--space-xl); }
+    .fs-splunk svg { color: var(--primary); }
+    .fs-s3 svg { color: var(--data-3); }
+    .fs-zone.is-bump { box-shadow: 0 0 0 4px rgb(21 122 71 / 0.22); }
+    .fs-s3.is-bump { box-shadow: 0 0 0 4px rgb(27 107 132 / 0.22); }
+    .fs-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+    .fs-pkt {
+      position: absolute;
+      left: 0; top: 0;
+      direction: ltr;
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      line-height: 1.35;
+      border-radius: 8px;
+      padding: 6px 8px;
+      box-shadow: var(--tile-shadow-soft);
+      overflow: hidden;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      will-change: transform, opacity;
+    }
+    .fs-pkt.is-raw { width: 210px; background: var(--surface-container-high); color: var(--on-surface); }
+    .fs-pkt.is-out { width: 122px; background: var(--primary); color: var(--on-primary); }
+    .fs-pkt.is-drop { width: 150px; background: var(--error-container); color: var(--error); direction: rtl; text-align: right; font-family: var(--font-body); font-weight: 600; }
+    .fs-pkt.is-arc { width: auto; padding: 3px 9px; background: var(--data-3); color: var(--on-primary); font-family: var(--font-body); font-weight: 600; }
+    .fs-pkt .mk { background: var(--secondary); color: var(--on-primary); border-radius: 3px; padding: 0 3px; }
+    .fs-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-md) var(--space-lg); font-size: var(--label-size); color: var(--on-surface-variant); }
+    .fs-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .fs-dot { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+    .fs-dot.is-raw { background: var(--surface-container-high); }
+    .fs-dot.is-out { background: var(--primary); }
+    .fs-dot.is-drop { background: var(--error); }
+    .fs-dot.is-arc { background: var(--data-3); }
+    @media (max-width: 720px) {
+      .fs-stage { gap: 1.5rem; padding: var(--space-lg) var(--space-sm); min-height: 300px; }
+      .fs-zone { padding: var(--space-sm) 6px; }
+      .fs-zone strong { font-size: 0.82rem; }
+      .fs-sub, .fs-steps { display: none; }
+      .fs-pkt { font-size: 0; padding: 0; height: 12px; }
+      .fs-pkt.is-raw { width: 58px; }
+      .fs-pkt.is-out { width: 26px; }
+      .fs-pkt.is-drop { width: 40px; }
+      .fs-pkt.is-arc { width: 20px; height: 8px; padding: 0; }
+    }
+    /* PEAX branding */
+    .site-logo { height: 46px; width: auto; display: block; }
+    .footer-brand { display: inline-flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
+    .footer-logo { height: 34px; width: auto; display: block; }
+    .credit { direction: ltr; font-weight: 600; color: var(--on-surface); }
+  </style>
+</head>
+<body>
+
+
+
+  <!-- Top Utility Bar -->
+  <div class="container">
+    <div class="top-bar">
+      <img class="site-logo" src="data:image/png;base64,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" alt="PEAX Data">
+      <div class="brand-eyebrow">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span>מדריך אינטראקטיבי ל־<bdi dir="ltr">Splunk Edge Processor</bdi></span>
+      </div>
+
+      <div class="audience-control" role="group" aria-label="בחירת רמת העמקה">
+        <button type="button" id="btn-mode-basic" class="audience-btn is-active" onclick="setAudienceMode('basic')">
+          <i data-lucide="sparkles" width="16" height="16" aria-hidden="true"></i>
+          <span>הסבר פשוט וויזואלי</span>
+        </button>
+        <button type="button" id="btn-mode-expert" class="audience-btn" onclick="setAudienceMode('expert')">
+          <i data-lucide="terminal" width="16" height="16" aria-hidden="true"></i>
+          <span>צלילה למומחי <bdi dir="ltr">Splunk</bdi></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BAND 1: Hero & Interactive Architecture -->
+  <section class="band">
+    <div class="container">
+      <div class="headline-stack">
+        <span class="section-eyebrow" id="hero-eyebrow">עיבוד נתונים חכם בקצה הרשת</span>
+        <h1>לנקות ולנתב לוגים <span class="accent-word">עוד לפני שהם עולים ל־<bdi dir="ltr">Splunk</bdi></span></h1>
+        <p class="lede" id="hero-lede">
+          במקום לשלוח הררי לוגים גולמיים לאינדוקס ולשלם עליהם, <bdi dir="ltr">Edge Processor</bdi> מסנן רעש, ממסך מידע רגיש ומפצל עותקים ישירות בתוך הרשת שלכם, מנוהל בפשטות מהענן.
+        </p>
+      </div>
+
+      <!-- 3 Crisp Summary KPI Tiles -->
+      <div class="kpi-grid">
+        <div class="kpi-tile">
+          <div class="kpi-value">0%</div>
+          <div class="kpi-label">לוגים שעוברים דרך ממשק הענן</div>
+          <div class="kpi-caption" id="kpi-1-cap">הנתונים נשארים ברשת שלכם ועוברים ישירות ליעד; מהענן יורדות רק הגדרות.</div>
+        </div>
+        <div class="kpi-tile">
+          <div class="kpi-value splunk-tone"><bdi dir="ltr">SPL2</bdi></div>
+          <div class="kpi-label">שפת סינון אחידה עם תצוגה מוקדמת</div>
+          <div class="kpi-caption" id="kpi-2-cap">רואים מיד איך הלוג נראה אחרי הניקוי עוד לפני ששולחים אירוע אחד לאינדקס.</div>
+        </div>
+        <div class="kpi-tile">
+          <div class="kpi-value">כלול</div>
+          <div class="kpi-label">ללא עלות רישוי נוספת ב־<bdi dir="ltr">Splunk Cloud</bdi></div>
+          <div class="kpi-caption" id="kpi-3-cap">זמין ללקוחות <bdi dir="ltr">Splunk Cloud</bdi> (וב־<bdi dir="ltr">Enterprise 10.x</bdi> דרך אפליקציית הניהול).</div>
+        </div>
+      </div>
+
+      <!-- Interactive Architecture Diagram -->
+      <div class="arch-wrapper">
+        <div class="arch-toolbar">
+          <div>
+            <strong style="font-family: var(--font-headline); font-size: 1.08rem;">איך הארכיטקטורה מחוברת?</strong>
+            <div class="arch-hint">לחצו על כל רכיב בתרשים כדי לראות מה קורה בתוכו, ושימו לב שהלוגים לא עולים לענן הניהול.</div>
+          </div>
+          <button type="button" id="btn-flow-toggle" class="btn-primary" onclick="togglePacketFlow()">
+            <i data-lucide="pause" width="16" height="16" aria-hidden="true"></i>
+            <span>השהה זרימת נתונים</span>
+          </button>
+        </div>
+
+        <div class="arch-layout">
+          <div class="arch-svg-card">
+            <svg class="arch-svg" viewBox="0 0 640 370" role="img" aria-label="תרשים ארכיטקטורה של Splunk Edge Processor">
+              <!-- On-prem network boundary -->
+              <rect x="14" y="138" width="444" height="218" rx="18" fill="var(--surface-container-low)" stroke="var(--outline)" stroke-width="1.5" stroke-dasharray="6 5" />
+              <text x="442" y="160" text-anchor="start" fill="var(--on-primary-container)" font-size="12" font-weight="700" font-family="Heebo, sans-serif">הרשת המקומית שלך (Data Plane)</text>
+
+              <!-- Cloud Control Plane -->
+              <g id="node-control" class="arch-node is-cloud" onclick="selectArchNode('control')" onkeydown="handleArchKey(event, 'control')" tabindex="0" role="button" aria-label="מישור הניהול בענן">
+                <rect class="node-box" x="150" y="14" width="240" height="82" rx="14" fill="var(--secondary-container)" stroke="var(--secondary)" stroke-width="1.5" />
+                <text x="270" y="42" text-anchor="middle" direction="ltr" fill="var(--on-secondary-container)" font-size="13" font-weight="700" font-family="Rubik, sans-serif">Splunk Cloud Control Plane</text>
+                <text x="270" y="62" text-anchor="middle" fill="var(--on-surface-variant)" font-size="11.5" font-family="Heebo, sans-serif">כתיבת פייפליינים ב־SPL2 וניטור מרכזי</text>
+                <text x="270" y="80" text-anchor="middle" fill="var(--secondary)" font-size="10.5" font-weight="700" font-family="Heebo, sans-serif">הגדרות בלבד • ללא מעבר לוגים</text>
+              </g>
+
+              <!-- TLS Config Line (Control Plane -> Edge Processor) -->
+              <path d="M 270 96 L 270 184" fill="none" stroke="var(--secondary)" stroke-width="2" stroke-dasharray="4 4" />
+              <polygon points="270,188 265,179 275,179" fill="var(--secondary)" />
+              <rect x="206" y="114" width="128" height="20" rx="10" fill="var(--surface-card)" stroke="var(--outline-variant)" stroke-width="1" />
+              <text x="270" y="128" text-anchor="middle" fill="var(--secondary)" font-size="10.5" font-weight="600" font-family="Heebo, sans-serif">משיכת קונפיגורציה (TLS)</text>
+
+              <!-- Data Flow Arrows (Sources -> EP -> Destinations) -->
+              <path id="flow-in" class="flow-line-active" d="M 142 252 L 196 252" fill="none" stroke="var(--primary)" stroke-width="3" />
+              <polygon points="200,252 191,246 191,258" fill="var(--primary)" />
+
+              <path id="flow-out-splunk" class="flow-line-active" d="M 398 232 L 486 192" fill="none" stroke="var(--primary)" stroke-width="3" />
+              <polygon points="490,190 480,189 485,199" fill="var(--primary)" />
+
+              <path id="flow-out-s3" class="flow-line-active" d="M 398 272 L 486 306" fill="none" stroke="var(--data-3)" stroke-width="2.5" />
+              <polygon points="490,308 484,299 480,309" fill="var(--data-3)" />
+
+              <!-- Data Sources -->
+              <g id="node-sources" class="arch-node" onclick="selectArchNode('sources')" onkeydown="handleArchKey(event, 'sources')" tabindex="0" role="button" aria-label="מקורות המידע">
+                <rect class="node-box" x="28" y="194" width="114" height="118" rx="14" fill="var(--surface-card)" stroke="var(--outline)" stroke-width="1.5" />
+                <text x="85" y="220" text-anchor="middle" fill="var(--on-surface)" font-size="12.5" font-weight="700" font-family="Rubik, sans-serif">מקורות מידע</text>
+                <text x="85" y="244" text-anchor="middle" direction="ltr" fill="var(--primary)" font-size="11" font-weight="600" font-family="IBM Plex Mono, monospace">Forwarders (S2S)</text>
+                <text x="85" y="264" text-anchor="middle" direction="ltr" fill="var(--primary)" font-size="11" font-weight="600" font-family="IBM Plex Mono, monospace">Syslog (TCP/UDP)</text>
+                <text x="85" y="284" text-anchor="middle" direction="ltr" fill="var(--primary)" font-size="11" font-weight="600" font-family="IBM Plex Mono, monospace">HTTP (HEC)</text>
+              </g>
+
+              <!-- Edge Processor Node -->
+              <g id="node-ep" class="arch-node is-selected" onclick="selectArchNode('ep')" onkeydown="handleArchKey(event, 'ep')" tabindex="0" role="button" aria-label="צומת Edge Processor">
+                <rect class="node-box" x="200" y="188" width="198" height="148" rx="16" fill="var(--primary-container)" stroke="var(--primary)" stroke-width="2.5" />
+                <text x="299" y="212" text-anchor="middle" direction="ltr" fill="var(--on-primary-container)" font-size="13.5" font-weight="800" font-family="Rubik, sans-serif">Edge Processor Node</text>
+                <text x="299" y="230" text-anchor="middle" direction="ltr" fill="var(--on-surface-variant)" font-size="10.5" font-family="Heebo, sans-serif">OpenTelemetry • Linux / Docker / K8s</text>
+
+                <!-- Internal pipeline stages -->
+                <rect x="214" y="242" width="170" height="24" rx="6" fill="var(--surface-card)" />
+                <text x="299" y="258" text-anchor="middle" fill="var(--on-surface)" font-size="11" font-weight="600" font-family="Heebo, sans-serif">1. קליטת לוגים (Receivers)</text>
+
+                <rect x="214" y="272" width="170" height="24" rx="6" fill="var(--surface-card)" />
+                <text x="299" y="288" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="700" font-family="Heebo, sans-serif">2. מנוע SPL2 (סינון ומיסוך)</text>
+
+                <rect x="214" y="302" width="170" height="24" rx="6" fill="var(--surface-card)" />
+                <text x="299" y="318" text-anchor="middle" fill="var(--secondary)" font-size="11" font-weight="700" font-family="Heebo, sans-serif">3. תור עמיד בדיסק (WAL)</text>
+              </g>
+
+              <!-- Destination 1: Splunk Indexers -->
+              <g id="node-splunk" class="arch-node" onclick="selectArchNode('splunk')" onkeydown="handleArchKey(event, 'splunk')" tabindex="0" role="button" aria-label="יעד Splunk Cloud או Enterprise">
+                <rect class="node-box" x="492" y="146" width="134" height="84" rx="14" fill="var(--surface-card)" stroke="var(--outline)" stroke-width="1.5" />
+                <text x="559" y="175" text-anchor="middle" direction="ltr" fill="var(--on-surface)" font-size="12.5" font-weight="700" font-family="Rubik, sans-serif">Splunk Indexers</text>
+                <text x="559" y="195" text-anchor="middle" fill="var(--primary)" font-size="11" font-weight="600" font-family="Heebo, sans-serif">רק לוגים חיוניים</text>
+                <text x="559" y="213" text-anchor="middle" direction="ltr" fill="var(--on-surface-variant)" font-size="10.5" font-family="IBM Plex Mono, monospace">S2S / HEC</text>
+              </g>
+
+              <!-- Destination 2: Cloud Archive (S3 / Azure) -->
+              <g id="node-archive" class="arch-node" onclick="selectArchNode('archive')" onkeydown="handleArchKey(event, 'archive')" tabindex="0" role="button" aria-label="יעד ארכיון זול Amazon S3">
+                <rect class="node-box" x="492" y="266" width="134" height="84" rx="14" fill="var(--surface-card)" stroke="var(--outline)" stroke-width="1.5" />
+                <text x="559" y="295" text-anchor="middle" direction="ltr" fill="var(--on-surface)" font-size="12.5" font-weight="700" font-family="Rubik, sans-serif">Amazon S3 / Blob</text>
+                <text x="559" y="315" text-anchor="middle" fill="var(--data-3)" font-size="11" font-weight="600" font-family="Heebo, sans-serif">עותק מלא לרגולציה</text>
+                <text x="559" y="333" text-anchor="middle" fill="var(--on-surface-variant)" font-size="10.5" font-family="Heebo, sans-serif">אחסון זול לטווח ארוך</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Detail Inspector Panel (Updates dynamically) -->
+          <div class="arch-detail-card" id="arch-detail-card" aria-live="polite">
+            <div>
+              <span class="detail-tag" id="detail-tag">מישור הנתונים (Data Plane)</span>
+              <h3 class="detail-title" id="detail-title" style="margin-top: var(--space-sm);">צומת Edge Processor</h3>
+              <p class="detail-body" id="detail-body" style="margin-top: var(--space-sm);"></p>
+            </div>
+            <ul class="detail-bullets" id="detail-bullets"></ul>
+            <div class="detail-meta">
+              <span class="detail-meta-label" id="detail-meta-label">טיפ מעשי</span>
+              <span id="detail-meta-text"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BAND 1.5: Live data-flow animation -->
+  <section class="band alt" id="flow-demo">
+    <div class="container">
+      <div class="headline-stack">
+        <span class="section-eyebrow">הדמיה חיה</span>
+        <h2>לוג נכנס גדול, <span class="accent-word">יוצא קטן ונקי</span></h2>
+        <p class="lede">
+          כל לוג עובר ב־<bdi dir="ltr">Edge Processor</bdi>: רעש נזרק, מידע רגיש מוסתר והטקסט המיותר נחתך. מה שנשאר עולה קטן יותר לאינדקסר של <bdi dir="ltr">Splunk</bdi>, ועותק מלא ודחוס נשמר ב־<bdi dir="ltr">Amazon S3</bdi>.
+        </p>
+      </div>
+
+      <div class="fs-shell">
+        <div class="fs-toolbar">
+          <div class="preset-pills" role="group" aria-label="בחירת מקור לוגים להדמיה">
+            <button type="button" id="fs-pan" class="btn-secondary is-active" onclick="fsScenario('pan')">
+              <i data-lucide="shield-alert" width="16" height="16" aria-hidden="true"></i>
+              <span>חומת אש <bdi dir="ltr">Palo Alto</bdi></span>
+            </button>
+            <button type="button" id="fs-win" class="btn-secondary" onclick="fsScenario('win')">
+              <i data-lucide="server" width="16" height="16" aria-hidden="true"></i>
+              <span><bdi dir="ltr">Windows Event Log</bdi></span>
+            </button>
+          </div>
+          <button type="button" id="fs-toggle" class="btn-primary" onclick="fsToggle()">
+            <i data-lucide="pause" width="16" height="16" aria-hidden="true"></i>
+            <span>השהה הדמיה</span>
+          </button>
+        </div>
+
+        <div class="fs-stage" id="fs-stage">
+          <div class="fs-zone fs-src" id="fs-src">
+            <i data-lucide="radio-tower" width="26" height="26" aria-hidden="true"></i>
+            <strong>מקורות לוגים</strong>
+            <span class="fs-sub" dir="ltr">Syslog · HEC · S2S</span>
+            <span class="fs-count" id="fs-src-count">0 אירועים</span>
+          </div>
+
+          <div class="fs-zone fs-ep" id="fs-ep">
+            <i data-lucide="cpu" width="28" height="28" aria-hidden="true"></i>
+            <strong dir="ltr">Edge Processor</strong>
+            <ul class="fs-steps">
+              <li id="fs-step-filter">סינון רעש</li>
+              <li id="fs-step-mask">מיסוך מידע רגיש</li>
+              <li id="fs-step-trim">קיצוץ טקסט</li>
+            </ul>
+          </div>
+
+          <div class="fs-dests">
+            <div class="fs-zone fs-splunk" id="fs-splunk">
+              <i data-lucide="database" width="24" height="24" aria-hidden="true"></i>
+              <strong dir="ltr">Splunk Indexer</strong>
+              <span class="fs-count" id="fs-splunk-count">0 אירועים</span>
+            </div>
+            <div class="fs-zone fs-s3" id="fs-s3">
+              <i data-lucide="archive" width="24" height="24" aria-hidden="true"></i>
+              <strong dir="ltr">Amazon S3</strong>
+              <span class="fs-count" id="fs-s3-count">0 עותקים</span>
+            </div>
+          </div>
+
+          <div class="fs-layer" id="fs-layer" aria-hidden="true"></div>
+        </div>
+
+        <div class="fs-legend" aria-hidden="true">
+          <span><i class="fs-dot is-raw"></i>לוג גולמי</span>
+          <span><i class="fs-dot is-out"></i>אחרי עיבוד</span>
+          <span><i class="fs-dot is-drop"></i>נזרק כרעש</span>
+          <span><i class="fs-dot is-arc"></i>עותק מלא דחוס</span>
+        </div>
+
+        <div class="impact-strip" aria-live="polite">
+          <div class="impact-stat">
+            <div class="impact-num" id="fs-in-bytes">0</div>
+            <div class="impact-lbl">תווים שנכנסו</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-num" id="fs-out-bytes">0</div>
+            <div class="impact-lbl">תווים שהגיעו ל־<bdi dir="ltr">Splunk</bdi></div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-num is-coral" id="fs-saved">0%</div>
+            <div class="impact-lbl">פחות נפח לאינדוקס</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-num" id="fs-dropped">0</div>
+            <div class="impact-lbl">אירועי רעש שנזרקו</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BAND 2: Interactive Live SPL2 Pipeline Simulator -->
+  <section class="band">
+    <div class="container">
+      <div class="headline-stack">
+        <span class="section-eyebrow">מעבדת <bdi dir="ltr">Pipeline</bdi> אינטראקטיבית</span>
+        <h2>ראו איך הר של לוגים מתכווץ <span class="accent-word">בזמן אמת</span></h2>
+        <p class="lede" id="sim-lede">
+          הפעילו את פעולות העיבוד השונות ובדקו מיד כמה אירועים נזרקים, אילו שדות רגישים מוסתרים, ואיך הנתונים מתפצלים בין <bdi dir="ltr">Splunk</bdi> ל־<bdi dir="ltr">Amazon S3</bdi>.
+        </p>
+      </div>
+
+      <div class="sim-shell">
+        <!-- Controls Bar -->
+        <div class="sim-controls-bar">
+          <div class="sim-top-row">
+            <div class="preset-pills" role="group" aria-label="בחירת תרחיש לוגים">
+              <button type="button" id="preset-pan" class="btn-secondary is-active" onclick="selectScenario('pan')">
+                <i data-lucide="shield-alert" width="16" height="16" aria-hidden="true"></i>
+                <span>חומת אש <bdi dir="ltr">Palo Alto (Syslog)</bdi></span>
+              </button>
+              <button type="button" id="preset-win" class="btn-secondary" onclick="selectScenario('win')">
+                <i data-lucide="server" width="16" height="16" aria-hidden="true"></i>
+                <span>יומני <bdi dir="ltr">Windows Event Log</bdi></span>
+              </button>
+            </div>
+            <button type="button" class="btn-secondary" onclick="resetPipelineToggles()">
+              <i data-lucide="rotate-ccw" width="15" height="15" aria-hidden="true"></i>
+              <span>איפוס שלבים</span>
+            </button>
+          </div>
+
+          <div class="toggle-grid">
+            <button type="button" id="tog-filter" class="pipeline-switch is-on" onclick="togglePipelineStep('filter')" aria-pressed="true">
+              <div class="switch-header">
+                <span class="switch-title">1. סינון רעש וקיצוץ שדות</span>
+                <span class="switch-pill" id="pill-filter">פעיל</span>
+              </div>
+              <span class="switch-desc" id="desc-filter">זורק אירועי מערכת לא רלוונטיים וחותך חותמת זמן כפולה.</span>
+            </button>
+
+            <button type="button" id="tog-mask" class="pipeline-switch is-on" onclick="togglePipelineStep('mask')" aria-pressed="true">
+              <div class="switch-header">
+                <span class="switch-title">2. מיסוך מידע רגיש (PII)</span>
+                <span class="switch-pill" id="pill-mask">פעיל</span>
+              </div>
+              <span class="switch-desc" id="desc-mask">מחליף מזהי לקוחות וכתובות פנימיות בכוכביות לפני היציאה מהרשת.</span>
+            </button>
+
+            <button type="button" id="tog-route" class="pipeline-switch" onclick="togglePipelineStep('route')" aria-pressed="false">
+              <div class="switch-header">
+                <span class="switch-title">3. פיצול לארכיון S3</span>
+                <span class="switch-pill" id="pill-route">כבוי</span>
+              </div>
+              <span class="switch-desc" id="desc-route">שומר עותק גולמי מלא ב־AWS S3 לצורכי תאימות ורגולציה.</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Impact Strip -->
+        <div class="impact-strip" aria-live="polite">
+          <div class="impact-stat">
+            <div class="impact-num" id="stat-in">6</div>
+            <div class="impact-lbl">אירועים נכנסים</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-num" id="stat-splunk">3</div>
+            <div class="impact-lbl">אירועים שמגיעים ל־<bdi dir="ltr">Splunk</bdi></div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-num is-coral" id="stat-reduction">-62%</div>
+            <div class="impact-lbl">חיסכון בנפח רישוי ואינדוקס</div>
+          </div>
+          <div class="impact-stat">
+            <div class="impact-num" id="stat-s3">0</div>
+            <div class="impact-lbl">עותקים מלאים ב־<bdi dir="ltr">Amazon S3</bdi></div>
+          </div>
+        </div>
+
+        <!-- Before / After Visual Comparison -->
+        <div class="sim-stage">
+          <div class="stream-card">
+            <div class="stream-header">
+              <h3 class="stream-title">קלט גולמי (<bdi dir="ltr">$source</bdi>)</h3>
+              <span class="stream-badge" id="badge-input">6 אירועים גולמיים</span>
+            </div>
+            <div class="log-list" id="raw-log-list"></div>
+          </div>
+
+          <div class="stream-card">
+            <div class="stream-header">
+              <h3 class="stream-title">פלט אחרי עיבוד (<bdi dir="ltr">$destination</bdi>)</h3>
+              <span class="stream-badge is-saved" id="badge-output">מסונן ומוכן לאינדוקס</span>
+            </div>
+            <div class="log-list" id="out-log-list"></div>
+          </div>
+        </div>
+
+        <!-- Dynamic SPL2 Pipeline View (Always light, readable) -->
+        <div class="spl2-card">
+          <div class="stream-header">
+            <h3 class="stream-title" id="spl2-card-title">הוראות העיבוד הנוכחיות ב־<bdi dir="ltr">SPL2</bdi></h3>
+            <span class="stream-badge" id="spl2-mode-badge">מתעדכן אוטומטית לפי הבחירה שלכם</span>
+          </div>
+          <pre class="spl2-code" id="spl2-code-block"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BAND 3: Durable Queue (WAL) & Reliability -->
+  <section class="band">
+    <div class="container">
+      <div class="headline-stack">
+        <span class="section-eyebrow">אמינות ועמידות בתקלות</span>
+        <h2>ומה קורה כש־<span class="accent-word"><bdi dir="ltr">Splunk</bdi> או הרשת נופלים?</span></h2>
+        <p class="lede" id="wal-lede">
+          ה־<bdi dir="ltr">Edge Processor</bdi> שומר כל יעד בתור נפרד ועמיד על הדיסק (<bdi dir="ltr">WAL</bdi>). תקלה ביעד אחד לעולם לא חוסמת את האחרים, ולא מאבדת מידע שכבר עובד.
+        </p>
+      </div>
+
+      <div class="wal-grid">
+        <!-- Interactive WAL Simulator -->
+        <div class="wal-sim-card">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-sm);">
+            <div>
+              <strong style="font-family: var(--font-headline); font-size: 1.05rem;">סימולטור תורים עמידים (תור נפרד לכל יעד)</strong>
+              <div style="font-size: var(--label-size); color: var(--on-surface-variant);">נסו לנתק יעד אחד וראו שהיעד השני ממשיך לזרום כרגיל.</div>
+            </div>
+          </div>
+
+          <div class="wal-lanes">
+            <div class="wal-lane">
+              <div class="wal-lane-top">
+                <span class="lane-name">יעד 1: <bdi dir="ltr">Splunk Cloud Indexers (S2S)</bdi></span>
+                <span class="status-chip" id="wal-splunk-status">מחובר וזורם</span>
+              </div>
+              <div class="wal-bar-track">
+                <div class="wal-bar-fill" id="wal-splunk-bar" style="width: 8%;"></div>
+              </div>
+              <div class="wal-meta-row">
+                <span id="wal-splunk-pct">תפוסת תור בדיסק: 8%</span>
+                <span id="wal-splunk-note">נכתב לסגמנט WAL ומשודר מיידית</span>
+              </div>
+            </div>
+
+            <div class="wal-lane">
+              <div class="wal-lane-top">
+                <span class="lane-name">יעד 2: <bdi dir="ltr">Amazon S3 Archive</bdi></span>
+                <span class="status-chip" id="wal-s3-status">מחובר וזורם</span>
+              </div>
+              <div class="wal-bar-track">
+                <div class="wal-bar-fill" id="wal-s3-bar" style="width: 5%;"></div>
+              </div>
+              <div class="wal-meta-row">
+                <span id="wal-s3-pct">תפוסת תור בדיסק: 5%</span>
+                <span id="wal-s3-note">תור עצמאי, לא מושפע מעיכובים ביעדים אחרים</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wal-actions">
+            <button type="button" id="btn-trip-splunk" class="btn-warning" onclick="toggleOutage('splunk')">
+              <i data-lucide="wifi-off" width="16" height="16" aria-hidden="true"></i>
+              <span>נתק זמנית את Splunk</span>
+            </button>
+            <button type="button" id="btn-trip-s3" class="btn-warning" onclick="toggleOutage('s3')">
+              <i data-lucide="cloud-off" width="16" height="16" aria-hidden="true"></i>
+              <span>נתק זמנית את S3</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Architecture Mechanics Cards -->
+        <div class="wal-pillars">
+          <div class="pillar-card">
+            <div class="pillar-kicker">שלב 1 • כניסה</div>
+            <h3 class="pillar-title">Receivers רב-פרוטוקוליים</h3>
+            <p class="pillar-text" id="pillar-1-text">מקבל נתונים מ־Forwarders (בפרוטוקול S2S), קריאות HTTP Event Collector (HEC), ומכשירי רשת ב־Syslog.</p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-kicker">שלב 2 • עיבוד בזיכרון</div>
+            <h3 class="pillar-title">לחיצת יד סינכרונית לתור</h3>
+            <p class="pillar-text" id="pillar-2-text">ה־Pipeline רץ בזיכרון, אך מאשר קליטה רק אחרי שהאירוע נכתב לתור ה־WAL בדיסק, כך שאין זריקת נתונים שקטה בעומס.</p>
+          </div>
+
+          <div class="pillar-card">
+            <div class="pillar-kicker">שלב 3 • תכנון משאבים</div>
+            <h3 class="pillar-title">דרישות אחסון וגדילה</h3>
+            <p class="pillar-text" id="pillar-3-text">מומלץ להקצות 20GB ליעד הראשון ועוד 5GB לכל יעד נוסף. אפשר להוסיף Nodes ב־Docker או Kubernetes להגדלת קיבולת.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BAND 4: Heavy Forwarder vs Edge Processor & Key Takeaways -->
+  <section class="band alt">
+    <div class="container">
+      <div class="headline-stack">
+        <span class="section-eyebrow">השוואה והחלטה מעשית</span>
+        <h2>מול <span class="accent-word"><bdi dir="ltr">Heavy Forwarder</bdi></span> המסורתי</h2>
+        <p class="lede" id="compare-lede">
+          לאנשי <bdi dir="ltr">Splunk</bdi> ותיקים: כך משתנה העבודה לעומת קבצי <bdi dir="ltr">props.conf</bdi> ו־<bdi dir="ltr">transforms.conf</bdi> המוכרים.
+        </p>
+      </div>
+
+      <div class="compare-card">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>מאפיין</th>
+              <th><bdi dir="ltr">Heavy Forwarder (HF)</bdi> המסורתי</th>
+              <th><bdi dir="ltr">Splunk Edge Processor (EP)</bdi></th>
+            </tr>
+          </thead>
+          <tbody id="compare-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="takeaway-grid">
+        <div class="takeaway-tile">
+          <div class="takeaway-num">1</div>
+          <h3 class="pillar-title">התחילו במקור הרועש ביותר</h3>
+          <p class="pillar-text" id="takeaway-1">חומות אש (כמו Palo Alto) ולוגים של Windows מייצרים לרוב את נפח הרעש הגבוה ביותר. 47+ תבניות SPL2 מוכנות חוסכות כתיבה מאפס.</p>
+        </div>
+        <div class="takeaway-tile">
+          <div class="takeaway-num">2</div>
+          <h3 class="pillar-title">בדקו עם נתוני דוגמה לפני הייצור</h3>
+          <p class="pillar-text" id="takeaway-2">במקום לנחש Regex בייצור, הריצו Play בעורך ה־Pipeline על לוגים לדוגמה ובדקו שכל השדות חולצו נקי (במיוחד בלוגי XML של Windows).</p>
+        </div>
+        <div class="takeaway-tile">
+          <div class="takeaway-num">3</div>
+          <h3 class="pillar-title">תשתיות ושיקולי אבטחה</h3>
+          <p class="pillar-text" id="takeaway-3">רצי Edge Processor פועלים על Linux (גרעין 4.9+, Docker או K8s). זכרו ש־S2S משתמש ב־mTLS כברירת מחדל לתעבורה מוצפנת.</p>
+        </div>
+      </div>
+
+      <footer class="page-footer">
+        <span>מבוסס על תיעוד רשמי של Splunk Cloud Platform, ארכיטקטורת WAL Queue, מדריכי Syslog/PAN וניסיון קהילת המשתמשים.</span>
+        <span class="footer-brand"><img class="footer-logo" src="data:image/png;base64,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" alt="PEAX Data"><span class="credit">Created by Yishay_Saban</span></span>
+      </footer>
+    </div>
+  </section>
+
+  <script>
+    // State
+    let audienceMode = 'basic';
+    let selectedNode = 'ep';
+    let flowRunning = true;
+    let currentScenario = 'pan';
+    let pipelineState = { filter: true, mask: true, route: false };
+    let outages = { splunk: false, s3: false };
+    let walLevels = { splunk: 8, s3: 5 };
+    let walTimer = null;
+
+    // Architecture node data (Dual audience)
+    const archData = {
+      control: {
+        tag: `מישור הניהול בענן (Control Plane)`,
+        isCloud: true,
+        title: `Splunk Cloud Control Plane`,
+        basic: `ממשק הניהול המרכזי בענן שבו כותבים חוקי ניקוי וניתוב, בודקים אותם על דוגמאות ורואים כמה דאטה זורם בכל רגע.`,
+        expert: `שירות מנוהל ב־Splunk Cloud (או אפליקציית Data Management ב־Splunk Enterprise 10.x). מספק עורך SPL2 אינטראקטיבי, ניהול צי Nodes, וניטור מדדי In/Out.`,
+        bulletsBasic: [
+          `עובד בדפדפן בלי להתחבר ב־SSH לשרתים`,
+          `כולל 47+ תבניות מוכנות לחומות אש ו־Windows`,
+          `נתוני הלוגים עצמם לעולם לא עוברים דרך השירות הזה`
+        ],
+        bulletsExpert: [
+          `מחובר ל־Splunk Cloud כספק זהויות (IdP) ולאחסון לוגים/מטריקות פנימיים`,
+          `תומך בסינכרון Sourcetypes ו־Line-breaking rules מהשרת המרכזי`,
+          `דורש הרשאת admin_all_objects וחיבור TLS יוצא מה־EP לענן`
+        ],
+        metaLabelBasic: `למה זה חשוב?`,
+        metaBasic: `מקבלים שליטה מרכזית מהענן בלי לשלוח אליו מידע רגיש לפני ניקוי.`,
+        metaLabelExpert: `דגשים למומחים`,
+        metaExpert: `גרסאות 10.2+ מריצות את צמתי ה־EP על Linux בלבד; ניתן להקים Control Plane על Search Head 10.x גם בסביבות 9.x.`
+      },
+      sources: {
+        tag: `מקורות מידע בארגון`,
+        isCloud: false,
+        title: `מערכות, שרתים ומכשירי רשת`,
+        basic: `כל המערכות שמייצרות לוגים בארגון, חומות אש, שרתים ואפליקציות, שולחות את המידע לתחנת הקצה המקומית.`,
+        expert: `מקורות Data-In מופנים ישירות אל כתובת ה־Edge Processor (או מאחורי Load Balancer) דרך עדכון outputs.conf או הגדרות Syslog/HEC.`,
+        bulletsBasic: [
+          `תמיכה ישירה ב־Splunk Forwarders`,
+          `קליטת Syslog ממכשירי רשת (כמו Palo Alto ו־Cisco)`,
+          `קליטת אירועים דרך HTTP Event Collector (HEC)`
+        ],
+        bulletsExpert: [
+          `תמיכה ב־S2S (ברירת מחדל mTLS להצפנת תעבורה בתנועה)`,
+          `תמיכה ב־Syslog TCP/UDP בתקני RFC 3164 ו־RFC 5424`,
+          `מתאים לנתוני לוגים (Log data); מטריקות גולמיות אינן נתמכות כקלט ישיר`
+        ],
+        metaLabelBasic: `איך מתחילים?`,
+        metaBasic: `מתחילים בהפניה של שרת בודד לבדיקה לפני שמפנים מאות שרתים בבת אחת.`,
+        metaLabelExpert: `טיפ מניסיון השטח`,
+        metaExpert: `הגדירו Default Destination או Drop לפריטים שלא תואמים אף Partition כדי למנוע פערים במעבר.`
+      },
+      ep: {
+        tag: `מישור הנתונים (Data Plane)`,
+        isCloud: false,
+        title: `צומת Edge Processor מקומי`,
+        basic: `תחנת עיבוד קלה שיושבת אצלכם ברשת, מריצה את חוקי הניקוי והמיסוך בזמן אמת ושומרת עותק בטיחות על הדיסק.`,
+        expert: `מיקרו-שירות Cloud-native מבוסס OpenTelemetry (OTel) Collector ב־Go עם שכבות קנייניות של Splunk. רץ על Linux (Docker / Kubernetes) וגדל לרוחב ב־Cluster.`,
+        bulletsBasic: [
+          `הלוגים נשארים בתוך הרשת עד לרגע השליחה ליעד`,
+          `מסנן, ממסך ומעשיר נתונים קרוב למקור`,
+          `מגן מאובדן מידע בעזרת תור עמיד בדיסק (WAL)`
+        ],
+        bulletsExpert: [
+          `מבנה פנימי: Receivers -> In-memory SPL2 Pipeline -> Synchronous Disk WAL -> Exporters`,
+          `תומך בחילוץ שדות (rex), טרנספורמציית XML/OCSF, והעשרה מ־KV Store Lookups`,
+          `תקלה ביעד אחד ממלאת רק את תור ה־WAL שלו מבלי לעכב יעדים אחרים`
+        ],
+        metaLabelBasic: `דרישת חומרה`,
+        metaBasic: `שרת לינוקס קל יחסית (20GB דיסק ליעד ראשון + 5GB לכל יעד נוסף).`,
+        metaLabelExpert: `הערת ביצועים`,
+        metaExpert: `כבהו/בטלו סיסמאות זמניות בתצוגת ניסוי, ובדקו תבניות WinEventLog XML בקפידה לפני העלאה לייצור.`
+      },
+      splunk: {
+        tag: `יעד פעיל לניתוח ואבטחה`,
+        isCloud: false,
+        title: `Splunk Cloud / Enterprise Indexers`,
+        basic: `רק האירועים החשובים והנקיים מגיעים לכאן, כך החיפושים מהירים יותר והתשלום על רישוי יורד.`,
+        expert: `מקבל את תוצרי ה־Pipeline המסוננים ישירות על ידי ה־Exporters של ה־Edge Processor בפרוטוקול S2S או HEC.`,
+        bulletsBasic: [
+          `פחות רעש במערכות האבטחה (SOC) ובדשבורדים`,
+          `ירידה מיידית בנפח ה־Ingest היומי`,
+          `שמירה על תאימות ל־CIM ולכללי האבטחה`
+        ],
+        bulletsExpert: [
+          `ניתן לנתב ישירות לאינדקס ייעודי via eval index="security_paf_index"`,
+          `הגדרת S2S דורשת פרטי Indexers מתוך אפליקציית Universal Forwarder Credentials`,
+          `תומך בשליחה ל־Splunk Cloud מחובר או ל־Deployments נפרדים ב־S2S/HEC`
+        ],
+        metaLabelBasic: `הרווח המיידי`,
+        metaBasic: `לקוחות מדווחים על הפחתה של 20% ומעלה עוד מהפעלת התבניות הבסיסיות.`,
+        metaLabelExpert: `בקרה וניטור`,
+        metaExpert: `ממשק ה־Data Flow מציג בזמן אמת אירועים נכנסים, יוצאים, ומצב queue_fill_pct לכל יעד.`
+      },
+      archive: {
+        tag: `יעד ארכיון ורגולציה`,
+        isCloud: false,
+        title: `Amazon S3 / Azure Blob Storage`,
+        basic: `עותק גולמי ומלא של כל הלוגים נשמר כאן בזול לצורכי ביקורת או רגולציה, בלי לבזבז רישוי Splunk.`,
+        expert: `בניית Pipeline מקביל (או שימוש ב־route / clone) ששולח עותק מלא ולא מסונן ל־S3/Blob במקביל לזרם האבטחה.`,
+        bulletsBasic: [
+          `שמירה זולה של 100% מהלוגים לשנים קדימה`,
+          `חיסכון של עשרות אחוזים בעלויות אחסון ואינדוקס`,
+          `תור דיסק ייעודי שמגן על השליחה לארכיון`
+        ],
+        bulletsExpert: [
+          `Pipeline מינימלי: | from $source | into $destination; ישירות לבאקט S3`,
+          `שים לב למגבלות מספר יעדים/תיקיות שניתן להגדיר לכל Pipeline (בדקו Soft Limits)`,
+          `חיוני לעמידה בתקני תאימות בלי לנפח את ה־Hot/Warm Indexers`
+        ],
+        metaLabelBasic: `הרעיון המרכזי`,
+        metaBasic: `לא מוותרים על אף לוג, פשוט משלמים עליו מחיר אחסון זול במקום מחיר עיבוד יקר.`,
+        metaLabelExpert: `ארכיטקטורה מומלצת`,
+        metaExpert: `שילוב Dual Destination: אירועי אבטחה חמים ל־Splunk ו־Raw מלא לארכיון S3 לצורכי שיחזור עתידי.`
+      }
+    };
+
+    // Scenarios for the Interactive Pipeline Playground
+    const scenarios = {
+      pan: {
+        sourcetype: `pan:firewall`,
+        destIndex: `security_paf_index`,
+        descFilter: {
+          basic: `מוחק אירועי HIPMATCH/CORRELATION שסתם מנפחים, ומוריד חותמת זמן כפולה.`,
+          expert: `מסיר Syslog readable_time, מחלץ event_type/subtype ומסנן HIPMATCH, CORRELATION ו־SYSTEM (routing/ras).`
+        },
+        descMask: {
+          basic: `מסתיר מספרי זיהוי/כרטיסים בלוגים של תעבורה לפני היציאה לאינדקס.`,
+          expert: `מריץ replace() על _raw להסוואת מזהים רגישים (PII / Internal Token) בשדה המקור.`
+        },
+        descRoute: {
+          basic: `שולח עותק מלא ולא מסונן ל־AWS S3 לשמירה זולה ורגולציה.`,
+          expert: `מפעיל פיצול יעדים מקביל (Dual Destination) לשמירת Raw ב־security_compliance_s3.`
+        },
+        logs: [
+          {
+            id: 1,
+            raw: `Sep 25 14:12:01 fw01 2026/09/25 14:12:01,00720,TRAFFIC,end,src=10.4.12.8 user=dan_k token=4580-9912-3310 bytes=4820`,
+            noTs: `2026/09/25 14:12:01,00720,TRAFFIC,end,src=10.4.12.8 user=dan_k token=4580-9912-3310 bytes=4820`,
+            maskedField: `4580-9912-3310`,
+            maskRepl: `XXXX-XXXX-3310`,
+            dropOnFilter: false
+          },
+          {
+            id: 2,
+            raw: `Sep 25 14:12:02 fw01 2026/09/25 14:12:02,00720,HIPMATCH,globalprotect,host=laptop-84 profile=ok`,
+            noTs: `2026/09/25 14:12:02,00720,HIPMATCH,globalprotect,host=laptop-84 profile=ok`,
+            dropOnFilter: true,
+            dropReason: `נזרק: HIPMATCH (רעש לא רלוונטי ל־SOC)`
+          },
+          {
+            id: 3,
+            raw: `Sep 25 14:12:04 fw01 2026/09/25 14:12:04,00720,THREAT,url,src=10.4.18.22 action=alert token=4916-0041-8821`,
+            noTs: `2026/09/25 14:12:04,00720,THREAT,url,src=10.4.18.22 action=alert token=4916-0041-8821`,
+            maskedField: `4916-0041-8821`,
+            maskRepl: `XXXX-XXXX-8821`,
+            dropOnFilter: false
+          },
+          {
+            id: 4,
+            raw: `Sep 25 14:12:05 fw01 2026/09/25 14:12:05,00720,SYSTEM,routing,bgp-keepalive-ok`,
+            noTs: `2026/09/25 14:12:05,00720,SYSTEM,routing,bgp-keepalive-ok`,
+            dropOnFilter: true,
+            dropReason: `נזרק: SYSTEM/routing (תפעול שוטף בלבד)`
+          },
+          {
+            id: 5,
+            raw: `Sep 25 14:12:07 fw01 2026/09/25 14:12:07,00720,CORRELATION,object,id=99182`,
+            noTs: `2026/09/25 14:12:07,00720,CORRELATION,object,id=99182`,
+            dropOnFilter: true,
+            dropReason: `נזרק: CORRELATION (חיסכון בנפח)`
+          },
+          {
+            id: 6,
+            raw: `Sep 25 14:12:09 fw01 2026/09/25 14:12:09,00720,THREAT,file,src=10.4.22.5 action=block token=5122-4410-1904`,
+            noTs: `2026/09/25 14:12:09,00720,THREAT,file,src=10.4.22.5 action=block token=5122-4410-1904`,
+            maskedField: `5122-4410-1904`,
+            maskRepl: `XXXX-XXXX-1904`,
+            dropOnFilter: false
+          }
+        ]
+      },
+      win: {
+        sourcetype: `WinEventLog:Security`,
+        destIndex: `win_security`,
+        descFilter: {
+          basic: `שומר רק אירועי אבטחה חשובים (כמו התחברות שנכשלה) ומקצר את הטקסט הארוך שבסוף הלוג.`,
+          expert: `מסנן לפי EventCode (4625/4688) ומקצר את בלוק ה־Message הארוך בסוף כל אירוע Windows.`
+        },
+        descMask: {
+          basic: `מוחק מזהים אישיים של משתמשים לפני שליחת האירוע לענן.`,
+          expert: `ממסך שדות AccountID / SSN בתוך _raw באמצעות rex ו־replace לפני ה־Exporter.`
+        },
+        descRoute: {
+          basic: `מגבה את כל יומני Windows הגולמיים ב־Amazon S3 לביקורת עתידית.`,
+          expert: `משכפל את כלל אירועי WinEventLog* לבאקט S3 במקביל לאינדוקס המצומצם.`
+        },
+        logs: [
+          {
+            id: 1,
+            raw: `EventCode=4625 Account_Name=admin_sec AccountID=312456789 Status=Failed Message=An account failed to log on. Subject: Security ID... [420 extra bytes]`,
+            noTs: `EventCode=4625 Account_Name=admin_sec AccountID=312456789 Status=Failed Message=[trimmed]`,
+            maskedField: `312456789`,
+            maskRepl: `XXXXX6789`,
+            dropOnFilter: false
+          },
+          {
+            id: 2,
+            raw: `EventCode=4634 Account_Name=svc_backup Message=An account was logged off. This event is generated when a logon session is destroyed...`,
+            noTs: `EventCode=4634 Account_Name=svc_backup Message=[trimmed]`,
+            dropOnFilter: true,
+            dropReason: `נזרק: EventCode=4634 (רעש Logoff המוני)`
+          },
+          {
+            id: 3,
+            raw: `EventCode=4688 Process_Name=powershell.exe AccountID=209887112 Message=A new process has been created. Creator Subject... [380 extra bytes]`,
+            noTs: `EventCode=4688 Process_Name=powershell.exe AccountID=209887112 Message=[trimmed]`,
+            maskedField: `209887112`,
+            maskRepl: `XXXXX7112`,
+            dropOnFilter: false
+          },
+          {
+            id: 4,
+            raw: `EventCode=5156 Direction=Outbound Port=443 Message=The Windows Filtering Platform has permitted a connection... [510 extra bytes]`,
+            noTs: `EventCode=5156 Direction=Outbound Port=443 Message=[trimmed]`,
+            dropOnFilter: true,
+            dropReason: `נזרק: EventCode=5156 (אישורי פיירוול מקומי)`
+          },
+          {
+            id: 5,
+            raw: `EventCode=4624 Account_Name=health_probe Message=An account was successfully logged on. Logon Type=3...`,
+            noTs: `EventCode=4624 Account_Name=health_probe Message=[trimmed]`,
+            dropOnFilter: true,
+            dropReason: `נזרק: EventCode=4624 (סריקת ניטור אוטומטית)`
+          },
+          {
+            id: 6,
+            raw: `EventCode=4625 Account_Name=rdp_guest AccountID=319002445 Status=Failed Message=An account failed to log on. Source Network Address... [410 extra bytes]`,
+            noTs: `EventCode=4625 Account_Name=rdp_guest AccountID=319002445 Status=Failed Message=[trimmed]`,
+            maskedField: `319002445`,
+            maskRepl: `XXXXX2445`,
+            dropOnFilter: false
+          }
+        ]
+      }
+    };
+
+    const compareRows = [
+      {
+        dim: `ניהול והגדרות`,
+        hf: { basic: `קבצי טקסט בכל שרת (ידני או Deployment Server)`, expert: `קבצי props.conf / transforms.conf מבוזרים` },
+        ep: { basic: `ממשק ענן מרכזי וברור, משנים פעם אחת ומפיצים בשניות`, expert: `Cloud Control Plane מרכזי, פריסה אוטומטית לכל ה־Nodes` }
+      },
+      {
+        dim: `שפת העיבוד`,
+        hf: { basic: `נוסחאות Regex מורכבות שקשה לתחזק`, expert: `Regex מפוצל בין transforms.conf ל־props.conf` },
+        ep: { basic: `שפת SPL2 קריאה עם כפתורי פעולות מוכנים`, expert: `SPL2 אחידה (פונקציות מותאמות, rex, where, OCSF, lookups)` }
+      },
+      {
+        dim: `בדיקה לפני הפעלה`,
+        hf: { basic: `מגדירים, מעלים נתונים, ורק אז מגלים אם עבד`, expert: `גישת "הגדר וקווה לטוב" לאחר אינדוקס` },
+        ep: { basic: `תצוגה מקדימה חיה על נתוני דוגמה לפני שליחה`, expert: `סימולציית Play בזמן אמת על Sample Data בתוך העורך` }
+      },
+      {
+        dim: `תשתית וגדילה (Scaling)`,
+        hf: { basic: `תהליך כבד יחסית הדורש תחזוקת שרת מלאה`, expert: `שרת Splunk מלא כמתווך, קשה לגדילה דינמית` },
+        ep: { basic: `רכיב קל מבוסס Docker / Kubernetes`, expert: `Cloud-native מבוסס OpenTelemetry (Go), סקייל אופקי מיידי` }
+      }
+    ];
+
+    function setAudienceMode(mode) {
+      audienceMode = mode;
+      const btnBasic = document.getElementById('btn-mode-basic');
+      const btnExpert = document.getElementById('btn-mode-expert');
+      if (btnBasic && btnExpert) {
+        btnBasic.classList.toggle('is-active', mode === 'basic');
+        btnExpert.classList.toggle('is-active', mode === 'expert');
+      }
+
+      const heroLede = document.getElementById('hero-lede');
+      const kpi1 = document.getElementById('kpi-1-cap');
+      const kpi2 = document.getElementById('kpi-2-cap');
+      const kpi3 = document.getElementById('kpi-3-cap');
+      const walLede = document.getElementById('wal-lede');
+      const p1 = document.getElementById('pillar-1-text');
+      const p2 = document.getElementById('pillar-2-text');
+      const p3 = document.getElementById('pillar-3-text');
+      const compLede = document.getElementById('compare-lede');
+
+      if (mode === 'basic') {
+        if (heroLede) heroLede.innerHTML = `במקום לשלוח הררי לוגים גולמיים לאינדוקס ולשלם עליהם, <bdi dir="ltr">Edge Processor</bdi> מסנן רעש, ממסך מידע רגיש ומפצל עותקים ישירות בתוך הרשת שלכם, מנוהל בפשטות מהענן.`;
+        if (kpi1) kpi1.textContent = `הנתונים נשארים ברשת שלכם ועוברים ישירות ליעד; מהענן יורדות רק הגדרות.`;
+        if (kpi2) kpi2.textContent = `רואים מיד איך הלוג נראה אחרי הניקוי עוד לפני ששולחים אירוע אחד לאינדקס.`;
+        if (kpi3) kpi3.innerHTML = `זמין ללא תוספת תשלום ללקוחות <bdi dir="ltr">Splunk Cloud</bdi> (וב־<bdi dir="ltr">Enterprise 10.x</bdi>).`;
+        if (walLede) walLede.innerHTML = `ה־<bdi dir="ltr">Edge Processor</bdi> שומר כל יעד בתור נפרד ועמיד על הדיסק (<bdi dir="ltr">WAL</bdi>). תקלה ביעד אחד לעולם לא חוסמת את האחרים, ולא מאבדת מידע שכבר עובד.`;
+        if (p1) p1.textContent = `מקבל נתונים מ־Forwarders (בפרוטוקול S2S), קריאות HTTP Event Collector (HEC), ומכשירי רשת ב־Syslog.`;
+        if (p2) p2.textContent = `ה־Pipeline רץ בזיכרון, אך מאשר קליטה רק אחרי שהאירוע נכתב לתור בדיסק, כך שאין זריקת נתונים שקטה בעומס.`;
+        if (p3) p3.textContent = `מומלץ להקצות 20GB ליעד הראשון ועוד 5GB לכל יעד נוסף. אפשר להוסיף Nodes ב־Docker או Kubernetes להגדלת קיבולת.`;
+        if (compLede) compLede.innerHTML = `מה ההבדל לעומת שיטת ה־<bdi dir="ltr">Heavy Forwarder</bdi> המוכרת? מבט מהיר על המעבר לקבצי עבודה מודרניים.`;
+      } else {
+        if (heroLede) heroLede.innerHTML = `מיקרו-שירות <bdi dir="ltr">On-Prem</bdi> מבוסס <bdi dir="ltr">OpenTelemetry</bdi> המחליף חלק מעומס ה־<bdi dir="ltr">Heavy Forwarder</bdi> וה־<bdi dir="ltr">props/transforms</bdi> ב־<bdi dir="ltr">SPL2 Pipelines</bdi> מנוהלים מהענן עם תור <bdi dir="ltr">WAL</bdi> סינכרוני.`;
+        if (kpi1) kpi1.innerHTML = `הפרדה קשיחה בין <bdi dir="ltr">Control Plane</bdi> בענן ל־<bdi dir="ltr">Data Plane</bdi> המקומי (משיכת קונפיג ב־<bdi dir="ltr">TLS</bdi> בלבד).`;
+        if (kpi2) kpi2.innerHTML = `תמיכה ב־<bdi dir="ltr">rex, eval, where, KV Store lookups, OCSF</bdi> ופונקציות מותאמות, עם <bdi dir="ltr">Sample Preview</bdi> לפני אינדוקס.`;
+        if (kpi3) kpi3.innerHTML = `כלול ב־<bdi dir="ltr">Splunk Cloud Platform (9.0.2209+)</bdi>; תמיכה ב־<bdi dir="ltr">Enterprise 10.x</bdi> דרך אפליקציית ה־<bdi dir="ltr">Data Management</bdi>.`;
+        if (walLede) walLede.innerHTML = `מעבר סינכרוני מ־<bdi dir="ltr">In-memory Pipeline</bdi> ל־<bdi dir="ltr">Disk WAL</bdi> ייעודי לכל <bdi dir="ltr">Exporter</bdi>. אירוע שנקלט בסגמנט הדיסק ישרוד נפילת תהליך (<bdi dir="ltr">Backpressure</bdi> מנוהל ללא זריקה שקטה).`;
+        if (p1) p1.innerHTML = `<bdi dir="ltr">Receivers:</bdi> קבלת <bdi dir="ltr">S2S</bdi> (עם <bdi dir="ltr">mTLS</bdi> כברירת מחדל), <bdi dir="ltr">HEC</bdi> ו־<bdi dir="ltr">Syslog (RFC 3164/5424)</bdi>. תומך לוגים בלבד.`;
+        if (p2) p2.innerHTML = `הלחיצת יד לתור ה־<bdi dir="ltr">WAL</bdi> סינכרונית וחוסמת (<bdi dir="ltr">blocks until accepted</bdi>). חלון הסיכון מצטמצם לאירועים שבאמצע עיבוד בזיכרון בעת קריסה פתאומית.`;
+        if (p3) p3.innerHTML = `<bdi dir="ltr">20GB + 5GB</bdi> לכל יעד נוסף. דורש <bdi dir="ltr">Linux Kernel 4.9+</bdi>. בדקו מגבלות מספר יעדים (למשל ריבוי תיקיות <bdi dir="ltr">S3</bdi>) בהתאם ל־<bdi dir="ltr">Soft Limits</bdi>.`;
+        if (compLede) compLede.innerHTML = `השוואה ארכיטקטונית ותפעולית מול <bdi dir="ltr">Heavy Forwarder (props.conf / transforms.conf)</bdi> בסביבות <bdi dir="ltr">Production</bdi>.`;
+      }
+
+      renderArchDetail();
+      renderScenarioControls();
+      renderPipelineOutput();
+      renderCompareTable();
+    }
+
+    function handleArchKey(event, nodeId) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectArchNode(nodeId);
+      }
+    }
+
+    function selectArchNode(nodeId) {
+      selectedNode = nodeId;
+      ['control', 'sources', 'ep', 'splunk', 'archive'].forEach((id) => {
+        const el = document.getElementById('node-' + id);
+        if (el) el.classList.toggle('is-selected', id === nodeId);
+      });
+      renderArchDetail();
+    }
+
+    function renderArchDetail() {
+      const data = archData[selectedNode];
+      if (!data) return;
+
+      const tagEl = document.getElementById('detail-tag');
+      const titleEl = document.getElementById('detail-title');
+      const bodyEl = document.getElementById('detail-body');
+      const bulletsEl = document.getElementById('detail-bullets');
+      const metaLblEl = document.getElementById('detail-meta-label');
+      const metaTxtEl = document.getElementById('detail-meta-text');
+
+      if (tagEl) {
+        tagEl.textContent = data.tag;
+        tagEl.classList.toggle('is-cloud', Boolean(data.isCloud));
+      }
+      if (titleEl) titleEl.textContent = data.title;
+      if (bodyEl) bodyEl.textContent = audienceMode === 'basic' ? data.basic : data.expert;
+
+      if (bulletsEl) {
+        const list = audienceMode === 'basic' ? data.bulletsBasic : data.bulletsExpert;
+        bulletsEl.innerHTML = list.map((item) => `<li>${item}</li>`).join('');
+      }
+      if (metaLblEl) metaLblEl.textContent = audienceMode === 'basic' ? data.metaLabelBasic : data.metaLabelExpert;
+      if (metaTxtEl) metaTxtEl.textContent = audienceMode === 'basic' ? data.metaBasic : data.metaExpert;
+    }
+
+    function togglePacketFlow() {
+      flowRunning = !flowRunning;
+      const btn = document.getElementById('btn-flow-toggle');
+      const lines = ['flow-in', 'flow-out-splunk', 'flow-out-s3'];
+      lines.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('flow-line-active', flowRunning);
+      });
+      if (btn) {
+        btn.innerHTML = flowRunning
+          ? `<i data-lucide="pause" width="16" height="16" aria-hidden="true"></i><span>השהה זרימת נתונים</span>`
+          : `<i data-lucide="play" width="16" height="16" aria-hidden="true"></i><span>הפעל זרימת נתונים</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+
+    function selectScenario(sc) {
+      currentScenario = sc;
+      const pPan = document.getElementById('preset-pan');
+      const pWin = document.getElementById('preset-win');
+      if (pPan) pPan.classList.toggle('is-active', sc === 'pan');
+      if (pWin) pWin.classList.toggle('is-active', sc === 'win');
+      renderScenarioControls();
+      renderPipelineOutput();
+    }
+
+    function togglePipelineStep(step) {
+      pipelineState[step] = !pipelineState[step];
+      renderScenarioControls();
+      renderPipelineOutput();
+    }
+
+    function resetPipelineToggles() {
+      pipelineState = { filter: true, mask: true, route: false };
+      renderScenarioControls();
+      renderPipelineOutput();
+    }
+
+    function renderScenarioControls() {
+      const sc = scenarios[currentScenario];
+      const steps = ['filter', 'mask', 'route'];
+      steps.forEach((s) => {
+        const btn = document.getElementById('tog-' + s);
+        const pill = document.getElementById('pill-' + s);
+        const active = pipelineState[s];
+        if (btn) {
+          btn.classList.toggle('is-on', active);
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        }
+        if (pill) pill.textContent = active ? `פעיל` : `כבוי`;
+      });
+
+      const dF = document.getElementById('desc-filter');
+      const dM = document.getElementById('desc-mask');
+      const dR = document.getElementById('desc-route');
+      if (dF) dF.textContent = sc.descFilter[audienceMode];
+      if (dM) dM.textContent = sc.descMask[audienceMode];
+      if (dR) dR.textContent = sc.descRoute[audienceMode];
+    }
+
+    function renderPipelineOutput() {
+      const sc = scenarios[currentScenario];
+      const rawList = document.getElementById('raw-log-list');
+      const outList = document.getElementById('out-log-list');
+      if (!rawList || !outList) return;
+
+      rawList.innerHTML = sc.logs.map((item) => `<div class="log-row">${escapeHtml(item.raw)}</div>`).join('');
+
+      let keptCount = 0;
+      let rawBytes = 0;
+      let outBytes = 0;
+      const outRows = [];
+
+      sc.logs.forEach((item) => {
+        rawBytes += item.raw.length;
+
+        if (pipelineState.filter && item.dropOnFilter) {
+          outRows.push(`<div class="log-row is-dropped" dir="rtl" style="text-align: right; font-family: var(--font-body);">${escapeHtml(item.dropReason)}</div>`);
+          return;
+        }
+
+        keptCount += 1;
+        let text = pipelineState.filter ? item.noTs : item.raw;
+        outBytes += text.length;
+
+        let escaped = escapeHtml(text);
+        if (pipelineState.mask && item.maskedField) {
+          escaped = escaped.replace(
+            escapeHtml(item.maskedField),
+            `<span class="mask-highlight">${escapeHtml(item.maskRepl)}</span>`
+          );
+        }
+
+        outRows.push(`<div class="log-row is-kept">${escaped}</div>`);
+      });
+
+      if (pipelineState.route) {
+        outRows.push(`<div class="log-row is-s3" dir="rtl" style="text-align: right; font-family: var(--font-body);">במקביל: כל ${sc.logs.length} האירועים הגולמיים מנותבים כעותק מלא אל Amazon S3 (אחסון ארכיון)</div>`);
+      }
+
+      outList.innerHTML = outRows.join('');
+
+      const reductionPct = rawBytes > 0 ? Math.round(((rawBytes - outBytes) / rawBytes) * 100) : 0;
+
+      const sIn = document.getElementById('stat-in');
+      const sSp = document.getElementById('stat-splunk');
+      const sRed = document.getElementById('stat-reduction');
+      const sS3 = document.getElementById('stat-s3');
+      const bOut = document.getElementById('badge-output');
+
+      if (sIn) sIn.textContent = String(sc.logs.length);
+      if (sSp) sSp.textContent = String(keptCount);
+      if (sRed) sRed.textContent = reductionPct > 0 ? `-${reductionPct}%` : `0%`;
+      if (sS3) sS3.textContent = pipelineState.route ? String(sc.logs.length) : `0`;
+      if (bOut) bOut.textContent = `${keptCount} נשלחים ל־Splunk${pipelineState.route ? ` + ${sc.logs.length} ל־S3` : ``}`;
+
+      renderSpl2Code(sc);
+    }
+
+    function renderSpl2Code(sc) {
+      const codeEl = document.getElementById('spl2-code-block');
+      const titleEl = document.getElementById('spl2-card-title');
+      if (!codeEl) return;
+
+      if (titleEl) {
+        titleEl.innerHTML = audienceMode === 'basic'
+          ? `מה ה־<bdi dir="ltr">Edge Processor</bdi> מריץ מאחורי הקלעים (<bdi dir="ltr">SPL2</bdi>)`
+          : `הגדרת ה־<bdi dir="ltr">SPL2 Pipeline</bdi> המלאה (שלב ה־<bdi dir="ltr">Processor</bdi>)`;
+      }
+
+      let lines = [];
+      lines.push(`<span class="tok-var">$pipeline</span> = <span class="tok-cmd">| from</span> <span class="tok-var">$source</span> <span class="tok-cmt">// sourcetype="${sc.sourcetype}"</span>`);
+
+      if (pipelineState.filter) {
+        if (currentScenario === 'pan') {
+          lines.push(`<span class="tok-cmt">// הסרת חותמת זמן כפולה וסינון רעש (HIPMATCH, CORRELATION, routing/ras)</span>`);
+          lines.push(`<span class="tok-cmd">| eval</span> _raw = replace(_raw, <span class="tok-var">"^\\w{3}\\s\\d{2}\\s\\d+:\\d+:\\d+\\s"</span>, <span class="tok-var">""</span>)`);
+          lines.push(`<span class="tok-cmd">| rex</span> field=_raw <span class="tok-var">/(?P&lt;event_type&gt;[A-Z]+),(?P&lt;event_subtype&gt;[\\w\\d]*)/</span>`);
+          lines.push(`<span class="tok-cmd">| where</span> not(event_type IN (<span class="tok-var">"CORRELATION"</span>, <span class="tok-var">"HIPMATCH"</span>))`);
+        } else {
+          lines.push(`<span class="tok-cmt">// השארת קודי אבטחה קריטיים בלבד וקיצור בלוק Message</span>`);
+          lines.push(`<span class="tok-cmd">| rex</span> field=_raw <span class="tok-var">/EventCode=(?P&lt;event_code&gt;\\d+)/</span>`);
+          lines.push(`<span class="tok-cmd">| where</span> event_code IN (4625, 4688)`);
+          lines.push(`<span class="tok-cmd">| eval</span> _raw = replace(_raw, <span class="tok-var">/(Message=.*)/</span>, <span class="tok-var">"Message=[trimmed]"</span>)`);
+        }
+      }
+
+      if (pipelineState.mask) {
+        lines.push(`<span class="tok-cmt">// מיסוך מזהים רגישים לפני שהנתונים יוצאים מהרשת</span>`);
+        if (currentScenario === 'pan') {
+          lines.push(`<span class="tok-cmd">| eval</span> _raw = replace(_raw, <span class="tok-var">/token=\\d{4}-\\d{4}-(\\d{4})/</span>, <span class="tok-var">"token=XXXX-XXXX-$1"</span>)`);
+        } else {
+          lines.push(`<span class="tok-cmd">| eval</span> _raw = replace(_raw, <span class="tok-var">/AccountID=\\d{5}(\\d{4})/</span>, <span class="tok-var">"AccountID=XXXXX$1"</span>)`);
+        }
+      }
+
+      lines.push(`<span class="tok-cmd">| eval</span> index = <span class="tok-var">"${sc.destIndex}"</span>`);
+      lines.push(`<span class="tok-cmd">| into</span> <span class="tok-var">$destination</span>;`);
+
+      if (pipelineState.route) {
+        lines.push(``);
+        lines.push(`<span class="tok-cmt">// Pipeline 2 מקביל: שמירת עותק גולמי מלא לרגולציה ב־AWS S3</span>`);
+        lines.push(`<span class="tok-var">$compliance_pipe</span> = <span class="tok-cmd">| from</span> <span class="tok-var">$source</span> <span class="tok-cmd">| into</span> <span class="tok-var">$s3_archive_destination</span>;`);
+      }
+
+      codeEl.innerHTML = lines.join('\n');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    // WAL Queue Simulation
+    function toggleOutage(target) {
+      outages[target] = !outages[target];
+      const btn = document.getElementById('btn-trip-' + target);
+      if (btn) {
+        btn.classList.toggle('is-tripped', outages[target]);
+        if (target === 'splunk') {
+          btn.innerHTML = outages.splunk
+            ? `<i data-lucide="wifi" width="16" height="16" aria-hidden="true"></i><span>חבר מחדש את Splunk</span>`
+            : `<i data-lucide="wifi-off" width="16" height="16" aria-hidden="true"></i><span>נתק זמנית את Splunk</span>`;
+        } else {
+          btn.innerHTML = outages.s3
+            ? `<i data-lucide="cloud" width="16" height="16" aria-hidden="true"></i><span>חבר מחדש את S3</span>`
+            : `<i data-lucide="cloud-off" width="16" height="16" aria-hidden="true"></i><span>נתק זמנית את S3</span>`;
+        }
+        if (window.lucide) lucide.createIcons();
+      }
+      updateWalUI();
+    }
+
+    function stepWalSimulation() {
+      ['splunk', 's3'].forEach((target) => {
+        if (outages[target]) {
+          walLevels[target] = Math.min(92, walLevels[target] + 12);
+        } else {
+          const baseline = target === 'splunk' ? 8 : 5;
+          if (walLevels[target] > baseline) {
+            walLevels[target] = Math.max(baseline, walLevels[target] - 18);
+          }
+        }
+      });
+      updateWalUI();
+    }
+
+    function updateWalUI() {
+      ['splunk', 's3'].forEach((target) => {
+        const isDown = outages[target];
+        const pct = walLevels[target];
+        const statusEl = document.getElementById('wal-' + target + '-status');
+        const barEl = document.getElementById('wal-' + target + '-bar');
+        const pctEl = document.getElementById('wal-' + target + '-pct');
+        const noteEl = document.getElementById('wal-' + target + '-note');
+
+        if (statusEl) {
+          statusEl.textContent = isDown ? `מנותק, צובר בדיסק (WAL)` : (pct > 15 ? `משחזר מהדיסק...` : `מחובר וזורם`);
+          statusEl.classList.toggle('is-down', isDown);
+        }
+        if (barEl) {
+          barEl.style.width = `${pct}%`;
+          barEl.classList.toggle('is-filling', isDown || pct > 20);
+        }
+        if (pctEl) pctEl.textContent = `תפוסת תור בדיסק: ${pct}%`;
+        if (noteEl) {
+          if (isDown) {
+            noteEl.textContent = `האירועים נשמרים בסגמנטים בדיסק ללא איבוד נתונים`;
+          } else if (pct > 15) {
+            noteEl.textContent = `פורק נתונים מה־WAL לפי הסדר (Cursor Recovery)`;
+          } else {
+            noteEl.textContent = target === 'splunk'
+              ? `נכתב לסגמנט WAL ומשודר מיידית`
+              : `תור עצמאי, לא מושפע מעיכובים ביעדים אחרים`;
+          }
+        }
+      });
+    }
+
+    function renderCompareTable() {
+      const tbody = document.getElementById('compare-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = compareRows.map((row) => `
+        <tr>
+          <td><strong>${row.dim}</strong></td>
+          <td>${row.hf[audienceMode]}</td>
+          <td class="compare-ep-cell">${row.ep[audienceMode]}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+      setAudienceMode('basic');
+      selectArchNode('ep');
+      walTimer = setInterval(stepWalSimulation, 750);
+    });
+  </script>
+
+  <script>
+    // Live data-flow animation: a log enters, Edge Processor filters/masks/trims it,
+    // the smaller event goes to Splunk and a full compressed copy goes to S3.
+    (function () {
+      const stage = document.getElementById('fs-stage');
+      const layer = document.getElementById('fs-layer');
+      const zSrc = document.getElementById('fs-src');
+      const zEp = document.getElementById('fs-ep');
+      const zSpl = document.getElementById('fs-splunk');
+      const zS3 = document.getElementById('fs-s3');
+      if (!stage || !layer || typeof scenarios === 'undefined') return;
+
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const T = (ms) => (reduce ? 1 : ms);
+      let running = true;
+      let scen = 'pan';
+      let idx = 0;
+      const st = { events: 0, inB: 0, outB: 0, toSplunk: 0, s3: 0, drop: 0 };
+
+      const fmt = (n) => n.toLocaleString('he-IL');
+      const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const short = (s, n) => (s.length > n ? s.slice(0, n) + '…' : s);
+
+      function render() {
+        document.getElementById('fs-src-count').textContent = fmt(st.events) + ' אירועים';
+        document.getElementById('fs-splunk-count').textContent = fmt(st.toSplunk) + ' אירועים';
+        document.getElementById('fs-s3-count').textContent = fmt(st.s3) + ' עותקים';
+        document.getElementById('fs-in-bytes').textContent = fmt(st.inB);
+        document.getElementById('fs-out-bytes').textContent = fmt(st.outB);
+        document.getElementById('fs-dropped').textContent = fmt(st.drop);
+        const pct = st.inB > 0 ? Math.round((1 - st.outB / st.inB) * 100) : 0;
+        document.getElementById('fs-saved').textContent = pct > 0 ? '-' + pct + '%' : '0%';
+      }
+
+      function center(el) {
+        const s = stage.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return { x: r.left - s.left + r.width / 2, y: r.top - s.top + r.height / 2 };
+      }
+      function place(d, p) {
+        d.getAnimations().forEach((a) => a.cancel());
+        d.style.transform = '';
+        d.style.left = (p.x - d.offsetWidth / 2) + 'px';
+        d.style.top = (p.y - d.offsetHeight / 2) + 'px';
+      }
+      function move(d, from, to, ms) {
+        return d.animate(
+          [{ transform: 'translate(0,0)' }, { transform: `translate(${to.x - from.x}px, ${to.y - from.y}px)` }],
+          { duration: T(ms), easing: 'cubic-bezier(.45,0,.25,1)', fill: 'forwards' }
+        ).finished;
+      }
+      function pkt(cls, html) {
+        const d = document.createElement('div');
+        d.className = 'fs-pkt ' + cls;
+        d.innerHTML = html;
+        layer.appendChild(d);
+        return d;
+      }
+      function bump(el) {
+        el.classList.add('is-bump');
+        setTimeout(() => el.classList.remove('is-bump'), 450);
+      }
+      function hit(ids) {
+        ids.forEach((id, i) => {
+          const li = document.getElementById(id);
+          if (!li) return;
+          setTimeout(() => li.classList.add('is-hit'), T(i * 160));
+          setTimeout(() => li.classList.remove('is-hit'), T(i * 160 + 520));
+        });
+      }
+
+      async function send(item) {
+        const src = center(zSrc), ep = center(zEp), spl = center(zSpl), s3 = center(zS3);
+        const raw = pkt('is-raw', esc(short(item.raw, 92)));
+        place(raw, src);
+        st.events += 1;
+        st.inB += item.raw.length;
+        render();
+
+        await move(raw, src, ep, 1500);
+        place(raw, ep);
+        zEp.classList.add('is-busy');
+        setTimeout(() => zEp.classList.remove('is-busy'), 600);
+
+        // full raw copy, compressed, to the S3 archive
+        const arc = pkt('is-arc', 'gzip');
+        place(arc, ep);
+        move(arc, ep, s3, 1400).then(() => { arc.remove(); st.s3 += 1; bump(zS3); render(); });
+
+        if (item.dropOnFilter) {
+          hit(['fs-step-filter']);
+          raw.className = 'fs-pkt is-drop';
+          raw.textContent = item.dropReason;
+          place(raw, ep);
+          await raw.animate(
+            [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.6)' }],
+            { duration: T(900), delay: T(600), fill: 'forwards' }
+          ).finished;
+          raw.remove();
+          st.drop += 1;
+          render();
+          return;
+        }
+
+        hit(['fs-step-filter', 'fs-step-mask', 'fs-step-trim']);
+        // show only the fields that matter, so the event visibly shrinks
+        let out = esc(item.noTs.replace(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2},\d+,/, '').replace(/ Message=\[trimmed\]$/, ''));
+        if (item.maskedField) out = out.replace(esc(item.maskedField), `<span class="mk">${esc(item.maskRepl)}</span>`);
+        await new Promise((r) => setTimeout(r, T(500)));
+        raw.className = 'fs-pkt is-out';
+        raw.innerHTML = out;
+        place(raw, ep);
+        await raw.animate([{ transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: T(320) }).finished;
+        place(raw, ep);
+        await move(raw, ep, spl, 1400);
+        raw.remove();
+        st.toSplunk += 1;
+        st.outB += item.noTs.length;
+        bump(zSpl);
+        render();
+      }
+
+      function tick() {
+        if (running && document.visibilityState === 'visible') {
+          const logs = scenarios[scen].logs;
+          send(logs[idx % logs.length]).catch(() => {});
+          idx += 1;
+        }
+      }
+
+      window.fsScenario = function (s) {
+        scen = s;
+        idx = 0;
+        document.getElementById('fs-pan').classList.toggle('is-active', s === 'pan');
+        document.getElementById('fs-win').classList.toggle('is-active', s === 'win');
+      };
+
+      window.fsToggle = function () {
+        running = !running;
+        layer.getAnimations({ subtree: true }).forEach((a) => (running ? a.play() : a.pause()));
+        const btn = document.getElementById('fs-toggle');
+        btn.innerHTML = running
+          ? '<i data-lucide="pause" width="16" height="16" aria-hidden="true"></i><span>השהה הדמיה</span>'
+          : '<i data-lucide="play" width="16" height="16" aria-hidden="true"></i><span>הפעל הדמיה</span>';
+        if (window.lucide) lucide.createIcons();
+      };
+
+      render();
+      tick();
+      setInterval(tick, 1700);
+    })();
+  </script>
+
+</body>
+</html>
